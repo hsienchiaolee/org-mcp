@@ -61,5 +61,56 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       (should (equal (plist-get result :deadline) "2026-03-28"))
       (should (null (plist-get result :closed))))))
 
+(ert-deftest org-mcp-query-basic ()
+  "Query entries matching an org-ql sexp."
+  (org-mcp-test-with-temp-org
+      "* TODO Task A :backend:
+:PROPERTIES:
+:ID: q-a
+:END:
+* DONE Task B :frontend:
+:PROPERTIES:
+:ID: q-b
+:END:
+* TODO Task C :backend:
+:PROPERTIES:
+:ID: q-c
+:END:
+"
+    (let ((result (org-mcp-query-query '(and (todo "TODO") (tags "backend")) nil nil)))
+      (should (= (plist-get result :count) 2))
+      (should (= (length (plist-get result :entries)) 2)))))
+
+(ert-deftest org-mcp-query-with-columns ()
+  "Query with specific columns returns only those fields."
+  (org-mcp-test-with-temp-org
+      "* TODO Task A
+:PROPERTIES:
+:ID: qc-a
+:EFFORT: 1h
+:END:
+"
+    (let* ((result (org-mcp-query-query '(todo "TODO") nil '("id" "heading" "state" "properties")))
+           (entry (car (plist-get result :entries))))
+      (should (plist-get entry :id))
+      (should (plist-get entry :heading))
+      (should (plist-get entry :state))
+      (should (plist-get entry :properties)))))
+
+(ert-deftest org-mcp-query-default-columns ()
+  "Default columns are id, heading, state."
+  (org-mcp-test-with-temp-org
+      "* TODO Task A
+:PROPERTIES:
+:ID: qd-a
+:END:
+"
+    (let* ((result (org-mcp-query-query '(todo "TODO") nil nil))
+           (entry (car (plist-get result :entries))))
+      (should (plist-get entry :id))
+      (should (plist-get entry :heading))
+      (should (plist-get entry :state))
+      (should-not (plist-get entry :properties)))))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here

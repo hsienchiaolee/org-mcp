@@ -10,6 +10,7 @@
 (require 'org)
 (require 'org-id)
 (require 'org-element)
+(require 'org-ql)
 
 (define-error 'org-mcp-entry-not-found "Entry not found")
 
@@ -95,6 +96,49 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
              :scheduled (org-mcp-query--get-timestamp :scheduled)
              :deadline (org-mcp-query--get-timestamp :deadline)
              :closed (org-mcp-query--get-timestamp :closed))))))
+
+(defconst org-mcp-query-default-columns '("id" "heading" "state")
+  "Default columns returned by org_query.")
+
+(defun org-mcp-query--project-entry (columns)
+  "Return a function that projects an entry at point to a plist with COLUMNS."
+  (lambda ()
+    (let ((result nil))
+      (dolist (col columns)
+        (pcase col
+          ("id" (setq result (plist-put result :id (org-id-get))))
+          ("heading" (setq result (plist-put result :heading
+                                             (substring-no-properties (org-get-heading t t t t)))))
+          ("state" (setq result (plist-put result :state (org-get-todo-state))))
+          ("tags" (setq result (plist-put result :tags (org-mcp-query--get-tags))))
+          ("properties" (setq result (plist-put result :properties (org-mcp-query--get-properties))))
+          ("priority" (setq result (plist-put result :priority
+                                              (let ((p (org-entry-get nil "PRIORITY")))
+                                                (when p (string-to-char p))))))
+          ("file" (setq result (plist-put result :file (buffer-file-name))))
+          ("body" (setq result (plist-put result :body (org-mcp-query--get-body))))
+          ("ancestors" (setq result (plist-put result :ancestors (org-mcp-query--get-ancestors))))
+          ("scheduled" (setq result (plist-put result :scheduled (org-mcp-query--get-timestamp :scheduled))))
+          ("deadline" (setq result (plist-put result :deadline (org-mcp-query--get-timestamp :deadline))))
+          ("closed" (setq result (plist-put result :closed (org-mcp-query--get-timestamp :closed))))))
+      result)))
+
+(defun org-mcp-query-query (query &optional files columns)
+  "Run org-ql QUERY across FILES (default `org-agenda-files').
+COLUMNS controls which fields are returned per entry.
+If COLUMNS is nil, use `org-mcp-query-default-columns'.
+If COLUMNS is the string \"all\", return full entry data."
+  (let* ((files (or files (org-agenda-files)))
+         (cols (cond
+                ((equal columns "all") '("id" "heading" "state" "tags" "properties"
+                                         "priority" "file" "body" "ancestors"
+                                         "scheduled" "deadline" "closed"))
+                ((null columns) org-mcp-query-default-columns)
+                (t columns)))
+         (entries (org-ql-select files query
+                    :action (org-mcp-query--project-entry cols))))
+    (list :count (length entries)
+          :entries entries)))
 
 (provide 'org-mcp-query)
 ;;; org-mcp-query.el ends here
