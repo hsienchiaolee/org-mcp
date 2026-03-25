@@ -10,8 +10,6 @@
 (require 'org)
 (require 'org-id)
 (require 'org-element)
-(require 'org-ql)
-
 (define-error 'org-mcp-entry-not-found "Entry not found")
 
 (defun org-mcp-query--find-entry (id)
@@ -123,8 +121,53 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
           ("closed" (setq result (plist-put result :closed (org-mcp-query--get-timestamp :closed))))))
       result)))
 
+(defun org-mcp-query--compile (query)
+  "Compile a query sexp into a predicate function.
+Supports: (todo STATE...), (tags TAG), (priority VAL),
+\(property KEY VAL), (heading REGEXP), (scheduled), (deadline),
+\(and ...), (or ...), (not PRED)."
+  (pcase query
+    (`(and . ,preds)
+     (let ((compiled (mapcar #'org-mcp-query--compile preds)))
+       (lambda () (seq-every-p #'funcall compiled))))
+    (`(or . ,preds)
+     (let ((compiled (mapcar #'org-mcp-query--compile preds)))
+       (lambda () (seq-some #'funcall compiled))))
+    (`(not ,pred)
+     (let ((compiled (org-mcp-query--compile pred)))
+       (lambda () (not (funcall compiled)))))
+    (`(todo . ,states)
+     (lambda () (member (org-get-todo-state) states)))
+    (`(tags ,tag)
+     (lambda () (member tag (org-get-tags nil t))))
+    (`(priority ,val)
+     (lambda () (equal (org-entry-get nil "PRIORITY") val)))
+    (`(property ,key ,val)
+     (lambda () (equal (org-entry-get nil key) val)))
+    (`(heading ,regexp)
+     (lambda () (string-match-p regexp (org-get-heading t t t t))))
+    (`(scheduled)
+     (lambda () (org-entry-get nil "SCHEDULED")))
+    (`(deadline)
+     (lambda () (org-entry-get nil "DEADLINE")))
+    (_ (error "Unknown query predicate: %S" query))))
+
+(defun org-mcp-query--select (files predicate action)
+  "Map over entries in FILES, collect ACTION results where PREDICATE matches."
+  (let ((results nil))
+    (dolist (file files)
+      (with-current-buffer (find-file-noselect file)
+        (org-with-wide-buffer
+         (goto-char (point-min))
+         (while (re-search-forward org-heading-regexp nil t)
+           (beginning-of-line)
+           (when (funcall predicate)
+             (push (funcall action) results))
+           (end-of-line)))))
+    (nreverse results)))
+
 (defun org-mcp-query-query (query &optional files columns)
-  "Run org-ql QUERY across FILES (default `org-agenda-files').
+  "Run QUERY sexp across FILES (default `org-agenda-files').
 COLUMNS controls which fields are returned per entry.
 If COLUMNS is nil, use `org-mcp-query-default-columns'.
 If COLUMNS is the string \"all\", return full entry data."
@@ -135,8 +178,9 @@ If COLUMNS is the string \"all\", return full entry data."
                                          "scheduled" "deadline" "closed"))
                 ((null columns) org-mcp-query-default-columns)
                 (t columns)))
-         (entries (org-ql-select files query
-                    :action (org-mcp-query--project-entry cols))))
+         (predicate (org-mcp-query--compile query))
+         (entries (org-mcp-query--select files predicate
+                    (org-mcp-query--project-entry cols))))
     (list :count (length entries)
           :entries entries)))
 

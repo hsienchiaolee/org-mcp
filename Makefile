@@ -1,5 +1,5 @@
 EMACS ?= emacs
-BATCH = $(EMACS) --batch -q --eval "(package-initialize)" -L . -L test
+BATCH = $(EMACS) --batch -Q -L . -L test
 
 .PHONY: test clean
 

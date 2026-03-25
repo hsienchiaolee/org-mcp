@@ -2,7 +2,7 @@
 
 ;; Author: Kai Lee
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "29.1") (org "9.6") (org-ql "0.8"))
+;; Package-Requires: ((emacs "29.1") (org "9.6"))
 ;; Keywords: org, mcp
 ;; URL: https://github.com/hsienchiaolee/org-mcp
 
