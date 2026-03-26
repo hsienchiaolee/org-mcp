@@ -96,31 +96,45 @@ Create the drawer if it does not exist."
 
 (cl-defun org-mcp-mutate-capture (&key file parent headline state properties body template-key)
   "Create a new Org entry.
-If TEMPLATE-KEY is provided, use that capture template.
-Otherwise, create from inline params under PARENT in FILE."
-  (if template-key
-      (error "Template-based capture not yet implemented")
+If PARENT (org-id) is given, file under it.
+If only FILE is given, append as top-level entry.
+HEADLINE is always required."
+  (when template-key
+    (error "Template-based capture not yet implemented"))
+  (unless headline
+    (error "Headline is required"))
+  (unless (or parent file)
+    (error "Either parent or file is required"))
+  (if parent
+      (let ((location (org-mcp-query--find-entry parent)))
+        (with-current-buffer (find-file-noselect (car location))
+          (org-with-wide-buffer
+           (goto-char (cdr location))
+           (let ((parent-level (org-current-level)))
+             (org-end-of-subtree t)
+             (insert "\n" (make-string (1+ parent-level) ?*) " "
+                     (if state (concat state " ") "")
+                     headline "\n")
+             (org-mcp-mutate--finalize-capture state properties body)))))
     (with-current-buffer (find-file-noselect file)
       (org-with-wide-buffer
-       (goto-char (point-min))
-       (unless (re-search-forward
-                (format org-complex-heading-regexp-format (regexp-quote parent))
-                nil t)
-         (signal 'org-mcp-entry-not-found (list parent)))
-       (let ((parent-level (org-current-level)))
-         (org-end-of-subtree t)
-         (insert "\n" (make-string (1+ parent-level) ?*) " "
-                 (if state (concat state " ") "")
-                 headline "\n")
-         (let ((new-id (org-id-get-create)))
-           (when properties
-             (dolist (pair properties)
-               (org-set-property (car pair) (cdr pair))))
-           (when body
-             (org-end-of-meta-data t)
-             (insert body "\n"))
-           (save-buffer)
-           (list :id new-id :file file)))))))
+       (goto-char (point-max))
+       (insert (if (bolp) "" "\n") "* "
+               (if state (concat state " ") "")
+               headline "\n")
+       (org-mcp-mutate--finalize-capture state properties body)))))
+
+(defun org-mcp-mutate--finalize-capture (_state properties body)
+  "Finalize a captured entry at point: assign ID, set PROPERTIES, insert BODY."
+  (let ((new-id (org-id-get-create)))
+    (when properties
+      (dolist (pair properties)
+        (org-set-property (car pair) (cdr pair))))
+    (when body
+      (org-end-of-meta-data t)
+      (insert body "\n"))
+    (save-buffer)
+    (list :id new-id :file (buffer-file-name))))
 
 (provide 'org-mcp-mutate)
 ;;; org-mcp-mutate.el ends here

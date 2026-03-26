@@ -75,16 +75,16 @@
                                 :drawer (:type "string" :description "Optional drawer name"))
                    :required ["id" "text"]))
     (:name "org_capture"
-     :description "Create a new Org entry from inline params or a capture template."
+     :description "Create a new Org entry. If parent org-id is given, file under it; otherwise append as top-level to file."
      :inputSchema (:type "object"
-                   :properties (:file (:type "string" :description "Target file path")
-                                :parent (:type "string" :description "Parent headline to file under")
+                   :properties (:file (:type "string" :description "Target file path (required when no parent)")
+                                :parent (:type "string" :description "Org-id of parent entry to file under")
                                 :headline (:type "string" :description "New entry headline")
                                 :state (:type "string" :description "TODO keyword")
                                 :properties (:type "object" :description "Property key-value pairs")
                                 :body (:type "string" :description "Body text")
                                 :template_key (:type "string" :description "Capture template key"))
-                   :required ["file"])))
+                   :required ["headline"])))
   "MCP tool definitions with JSON Schema input specs.")
 
 (defun org-mcp--handle-initialize (id _params)

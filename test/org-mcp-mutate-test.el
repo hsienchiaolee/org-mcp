@@ -98,28 +98,36 @@ Existing body.
        (should (search-forward "Result line." nil t))
        (should (search-forward ":END:" nil t))))))
 
-(ert-deftest org-mcp-mutate-capture-inline ()
-  "Create a new entry from inline params."
+(ert-deftest org-mcp-mutate-capture-cases ()
+  "Test all capture input combinations."
   (org-mcp-test-with-temp-org
       "* Projects
 :PROPERTIES:
 :ID: capture-parent
 :END:
 "
-    (let* ((file (car (org-id-find "capture-parent")))
-           (result (org-mcp-mutate-capture
-                    :file file
-                    :parent "Projects"
-                    :headline "New task"
-                    :state "TODO"
-                    :properties '(("EFFORT" . "1h"))
-                    :body "Task body.")))
-      (should (plist-get result :id))
-      (should (equal (plist-get result :file) file))
-      ;; Verify the entry exists
-      (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
-        (should (equal (plist-get entry :headline) "New task"))
-        (should (equal (plist-get entry :state) "TODO"))))))
+    (dolist (case `(;; (parent file headline expected)
+                    ("capture-parent" nil      "Task A" success)
+                    (nil              ,temp-file "Task B" success)
+                    ("capture-parent" ,temp-file "Task C" success)
+                    (nil              nil      "Task D" error)
+                    (nil              ,temp-file nil      error)
+                    ("capture-parent" nil      nil      error)
+                    (nil              nil      nil      error)))
+      (let ((parent (nth 0 case))
+            (file (nth 1 case))
+            (headline (nth 2 case))
+            (expected (nth 3 case)))
+        (if (eq expected 'error)
+            (should-error
+             (org-mcp-mutate-capture :parent parent :file file :headline headline)
+             :type 'error)
+          (let ((result (org-mcp-mutate-capture
+                         :parent parent :file file :headline headline :state "TODO")))
+            (should (plist-get result :id))
+            (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
+              (should (equal (plist-get entry :headline) headline))
+              (should (equal (plist-get entry :state) "TODO")))))))))
 
 (ert-deftest org-mcp-mutate-set-headline ()
   "Rename a headline on an entry."
