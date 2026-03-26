@@ -112,5 +112,71 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       (should (plist-get entry :state))
       (should-not (plist-get entry :properties)))))
 
+(ert-deftest org-mcp-query-get-children ()
+  "Get immediate children of an entry."
+  (org-mcp-test-with-temp-org
+      "* Project Alpha
+:PROPERTIES:
+:ID: parent-1
+:END:
+** TODO Subtask A
+:PROPERTIES:
+:ID: child-a
+:END:
+** DONE Subtask B
+:PROPERTIES:
+:ID: child-b
+:END:
+*** Nested under B
+:PROPERTIES:
+:ID: grandchild
+:END:
+"
+    (let ((result (org-mcp-query-get-children "parent-1")))
+      ;; Only immediate children, not grandchildren
+      (should (= (length (plist-get result :children)) 2))
+      (let ((first (car (plist-get result :children))))
+        (should (equal (plist-get first :heading) "Subtask A"))
+        (should (equal (plist-get first :state) "TODO"))))))
+
+(ert-deftest org-mcp-query-get-properties-basic ()
+  "Get properties for an entry without inheritance."
+  (org-mcp-test-with-temp-org
+      "* Parent
+:PROPERTIES:
+:ID: prop-parent
+:CATEGORY: work
+:EFFORT: 4h
+:END:
+** Child
+:PROPERTIES:
+:ID: prop-child
+:ASSIGNEE: alice
+:END:
+"
+    (let ((result (org-mcp-query-get-properties "prop-child")))
+      (should (equal (plist-get (plist-get result :properties) :ASSIGNEE) "alice"))
+      ;; Without inheritance, parent's EFFORT should not appear
+      (should-not (plist-get (plist-get result :properties) :EFFORT)))))
+
+(ert-deftest org-mcp-query-get-properties-inherited ()
+  "Get properties with inheritance enabled."
+  (org-mcp-test-with-temp-org
+      "* Parent
+:PROPERTIES:
+:ID: inh-parent
+:EFFORT: 4h
+:END:
+** Child
+:PROPERTIES:
+:ID: inh-child
+:ASSIGNEE: alice
+:END:
+"
+    (let ((result (org-mcp-query-get-properties "inh-child" t)))
+      (should (equal (plist-get (plist-get result :properties) :ASSIGNEE) "alice"))
+      ;; With inheritance, parent's EFFORT should appear
+      (should (equal (plist-get (plist-get result :properties) :EFFORT) "4h")))))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here

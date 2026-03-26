@@ -7,6 +7,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'org)
 (require 'org-id)
 (require 'org-element)
@@ -183,6 +184,53 @@ If COLUMNS is the string \"all\", return full entry data."
                     (org-mcp-query--project-entry cols))))
     (list :count (length entries)
           :entries entries)))
+
+(defun org-mcp-query-get-children (id &optional columns)
+  "Return immediate child entries of org-id ID.
+COLUMNS controls which fields are returned (default: id, heading, state)."
+  (let ((location (org-mcp-query--find-entry id))
+        (cols (or columns org-mcp-query-default-columns)))
+    (with-current-buffer (find-file-noselect (car location))
+      (org-with-wide-buffer
+       (goto-char (cdr location))
+       (let ((parent-level (org-current-level))
+             (children nil)
+             (project (org-mcp-query--project-entry cols)))
+         (when (org-goto-first-child)
+           (push (funcall project) children)
+           (while (org-get-next-sibling)
+             (when (= (org-current-level) (1+ parent-level))
+               (push (funcall project) children))))
+         (list :children (nreverse children)))))))
+
+(defun org-mcp-query-get-properties (id &optional inherited)
+  "Return property drawer for org-id ID.
+When INHERITED is non-nil, include properties inherited from ancestors."
+  (let ((location (org-mcp-query--find-entry id)))
+    (with-current-buffer (find-file-noselect (car location))
+      (org-with-wide-buffer
+       (goto-char (cdr location))
+       (if (not inherited)
+           (list :properties (org-mcp-query--get-properties))
+         ;; Collect all property keys from this entry and ancestors
+         (let ((keys nil))
+           (dolist (pair (org-entry-properties nil 'standard))
+             (cl-pushnew (car pair) keys :test #'equal))
+           (save-excursion
+             (while (org-up-heading-safe)
+               (dolist (pair (org-entry-properties nil 'standard))
+                 (cl-pushnew (car pair) keys :test #'equal))))
+           ;; Fetch each key with inheritance, filtering standard props
+           (let ((result nil))
+             (dolist (key keys)
+               (unless (member key '("CATEGORY" "FILE" "BLOCKED" "ITEM"
+                                     "PRIORITY" "TODO" "TAGS" "ALLTAGS"
+                                     "CLOCKSUM" "CLOSED" "DEADLINE" "SCHEDULED"
+                                     "TIMESTAMP" "TIMESTAMP_IA"))
+                 (let ((val (org-entry-get nil key t)))
+                   (when val
+                     (setq result (plist-put result (intern (concat ":" key)) val))))))
+             (list :properties result))))))))
 
 (provide 'org-mcp-query)
 ;;; org-mcp-query.el ends here
