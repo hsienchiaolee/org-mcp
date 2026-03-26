@@ -24,6 +24,29 @@ With =use-package= + =straight.el=:
   :straight (org-mcp :type git :host github :repo "hsienchiaolee/org-mcp"))
 #+end_src
 
+With =elpaca=:
+
+#+begin_src emacs-lisp
+(elpaca (org-mcp :host github :repo "hsienchiaolee/org-mcp"))
+#+end_src
+
+With Doom Emacs (in =packages.el=):
+
+#+begin_src emacs-lisp
+(package! org-mcp :recipe (:host github :repo "hsienchiaolee/org-mcp"))
+#+end_src
+
+Manual:
+
+#+begin_src sh
+git clone https://github.com/hsienchiaolee/org-mcp.git ~/.emacs.d/site-lisp/org-mcp
+#+end_src
+
+#+begin_src emacs-lisp
+(add-to-list 'load-path "~/.emacs.d/site-lisp/org-mcp")
+(require 'org-mcp)
+#+end_src
+
 * Usage
 
 ** Batch mode
