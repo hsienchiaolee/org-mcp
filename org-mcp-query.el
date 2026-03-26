@@ -1,5 +1,7 @@
 ;;; org-mcp-query.el --- Query tools for org-mcp -*- lexical-binding: t; -*-
 
+;; URL: https://github.com/hsienchiaolee/org-mcp
+
 ;;; Commentary:
 
 ;; Implements read-only tools: org_get_entry, org_query, org_get_children,
@@ -11,7 +13,7 @@
 (require 'org)
 (require 'org-id)
 (require 'org-element)
-(define-error 'org-mcp-entry-not-found "Entry not found")
+(require 'org-mcp-rpc)
 
 (defun org-mcp-query--find-entry (id)
   "Find entry by org-id ID. Return (file . position) or signal error."

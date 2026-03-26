@@ -1,5 +1,7 @@
 ;;; org-mcp-rpc.el --- JSON-RPC 2.0 layer for org-mcp -*- lexical-binding: t; -*-
 
+;; URL: https://github.com/hsienchiaolee/org-mcp
+
 ;;; Commentary:
 
 ;; Handles JSON-RPC 2.0 message parsing, validation, and serialization.
@@ -12,6 +14,7 @@
 ;; Error types
 (define-error 'org-mcp-rpc-parse-error "JSON parse error" 'json-error)
 (define-error 'org-mcp-rpc-invalid-request "Invalid JSON-RPC request")
+(define-error 'org-mcp-entry-not-found "Entry not found")
 
 ;; Standard JSON-RPC 2.0 error codes
 (defconst org-mcp-rpc-error-parse -32700)
