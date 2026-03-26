@@ -1,0 +1,23 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs-version: ['29.1', '29.4', 'snapshot']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs-version }}
+      - name: Byte-compile
+        run: emacs --batch -Q -L . --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile org-mcp-rpc.el org-mcp-query.el org-mcp-mutate.el org-mcp-notify.el org-mcp.el
+      - name: Run tests
+        run: make test
