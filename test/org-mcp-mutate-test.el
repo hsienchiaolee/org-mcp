@@ -66,5 +66,60 @@
       (let ((props (plist-get (org-mcp-query-get-properties "mut-prop-2") :properties)))
         (should (null (plist-get props :ASSIGNEE)))))))
 
+(ert-deftest org-mcp-mutate-append-body ()
+  "Append text to the body of an entry."
+  (org-mcp-test-with-temp-org
+      "* TODO Task A
+:PROPERTIES:
+:ID: mut-body-1
+:END:
+Existing body.
+"
+    (let ((result (org-mcp-mutate-append-body "mut-body-1" "Appended text." nil)))
+      (should (equal (plist-get result :appended) t))
+      (let ((entry (org-mcp-query-get-entry "mut-body-1")))
+        (should (string-match-p "Existing body" (plist-get entry :body)))
+        (should (string-match-p "Appended text" (plist-get entry :body)))))))
+
+(ert-deftest org-mcp-mutate-append-body-drawer ()
+  "Append text inside a named drawer."
+  (org-mcp-test-with-temp-org
+      "* TODO Task A
+:PROPERTIES:
+:ID: mut-drawer-1
+:END:
+"
+    (org-mcp-mutate-append-body "mut-drawer-1" "Result line." "RESULTS")
+    (with-current-buffer (find-file-noselect
+                          (car (org-id-find "mut-drawer-1")))
+      (org-with-wide-buffer
+       (goto-char (cdr (org-id-find "mut-drawer-1")))
+       (should (search-forward ":RESULTS:" nil t))
+       (should (search-forward "Result line." nil t))
+       (should (search-forward ":END:" nil t))))))
+
+(ert-deftest org-mcp-mutate-capture-inline ()
+  "Create a new entry from inline params."
+  (org-mcp-test-with-temp-org
+      "* Projects
+:PROPERTIES:
+:ID: capture-parent
+:END:
+"
+    (let* ((file (car (org-id-find "capture-parent")))
+           (result (org-mcp-mutate-capture
+                    :file file
+                    :headline "Projects"
+                    :heading "New task"
+                    :state "TODO"
+                    :properties '(("EFFORT" . "1h"))
+                    :body "Task body.")))
+      (should (plist-get result :id))
+      (should (equal (plist-get result :file) file))
+      ;; Verify the entry exists
+      (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
+        (should (equal (plist-get entry :heading) "New task"))
+        (should (equal (plist-get entry :state) "TODO"))))))
+
 (provide 'org-mcp-mutate-test)
 ;;; org-mcp-mutate-test.el ends here
