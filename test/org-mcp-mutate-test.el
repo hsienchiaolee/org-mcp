@@ -109,8 +109,8 @@ Existing body.
     (let* ((file (car (org-id-find "capture-parent")))
            (result (org-mcp-mutate-capture
                     :file file
-                    :headline "Projects"
-                    :heading "New task"
+                    :parent "Projects"
+                    :headline "New task"
                     :state "TODO"
                     :properties '(("EFFORT" . "1h"))
                     :body "Task body.")))
@@ -118,23 +118,23 @@ Existing body.
       (should (equal (plist-get result :file) file))
       ;; Verify the entry exists
       (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
-        (should (equal (plist-get entry :heading) "New task"))
+        (should (equal (plist-get entry :headline) "New task"))
         (should (equal (plist-get entry :state) "TODO"))))))
 
-(ert-deftest org-mcp-mutate-set-heading ()
-  "Rename a heading on an entry."
+(ert-deftest org-mcp-mutate-set-headline ()
+  "Rename a headline on an entry."
   (org-mcp-test-with-temp-org
       "* TODO Old Name
 :PROPERTIES:
-:ID: mut-heading-1
+:ID: mut-headline-1
 :END:
 "
-    (let ((result (org-mcp-mutate-set-heading "mut-heading-1" "New Name")))
-      (should (equal (plist-get result :id) "mut-heading-1"))
-      (should (equal (plist-get result :old_heading) "Old Name"))
-      (should (equal (plist-get result :new_heading) "New Name"))
-      (let ((entry (org-mcp-query-get-entry "mut-heading-1")))
-        (should (equal (plist-get entry :heading) "New Name"))
+    (let ((result (org-mcp-mutate-set-headline "mut-headline-1" "New Name")))
+      (should (equal (plist-get result :id) "mut-headline-1"))
+      (should (equal (plist-get result :old_headline) "Old Name"))
+      (should (equal (plist-get result :new_headline) "New Name"))
+      (let ((entry (org-mcp-query-get-entry "mut-headline-1")))
+        (should (equal (plist-get entry :headline) "New Name"))
         (should (equal (plist-get entry :state) "TODO"))))))
 
 (provide 'org-mcp-mutate-test)

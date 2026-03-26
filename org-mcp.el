@@ -34,7 +34,7 @@
      :inputSchema (:type "object"
                    :properties (:query (:type "string" :description "Query s-expression as a string")
                                 :files (:type "array" :items (:type "string") :description "Files to search; defaults to org-agenda-files")
-                                :columns (:description "Columns to return per entry; defaults to [id, heading, state]"))
+                                :columns (:description "Columns to return per entry; defaults to [id, headline, state]"))
                    :required ["query"]))
     (:name "org_get_children"
      :description "Return immediate child entries of a given entry."
@@ -48,12 +48,12 @@
                    :properties (:id (:type "string" :description "The org-id of the entry")
                                 :inherited (:type "boolean" :description "Include inherited properties; defaults to false"))
                    :required ["id"]))
-    (:name "org_set_heading"
-     :description "Rename the heading of an entry."
+    (:name "org_set_headline"
+     :description "Rename the headline of an entry."
      :inputSchema (:type "object"
                    :properties (:id (:type "string" :description "The org-id of the entry")
-                                :heading (:type "string" :description "New heading text"))
-                   :required ["id" "heading"]))
+                                :headline (:type "string" :description "New headline text"))
+                   :required ["id" "headline"]))
     (:name "org_set_state"
      :description "Set the TODO keyword of an entry."
      :inputSchema (:type "object"
@@ -78,8 +78,8 @@
      :description "Create a new Org entry from inline params or a capture template."
      :inputSchema (:type "object"
                    :properties (:file (:type "string" :description "Target file path")
-                                :headline (:type "string" :description "Parent heading to file under")
-                                :heading (:type "string" :description "New entry heading")
+                                :parent (:type "string" :description "Parent headline to file under")
+                                :headline (:type "string" :description "New entry headline")
                                 :state (:type "string" :description "TODO keyword")
                                 :properties (:type "object" :description "Property key-value pairs")
                                 :body (:type "string" :description "Body text")
@@ -135,8 +135,8 @@
      (org-mcp-query-get-children (plist-get args :id) (plist-get args :columns)))
     ("org_get_properties"
      (org-mcp-query-get-properties (plist-get args :id) (plist-get args :inherited)))
-    ("org_set_heading"
-     (org-mcp-mutate-set-heading (plist-get args :id) (plist-get args :heading)))
+    ("org_set_headline"
+     (org-mcp-mutate-set-headline (plist-get args :id) (plist-get args :headline)))
     ("org_set_state"
      (org-mcp-mutate-set-state (plist-get args :id) (plist-get args :state)))
     ("org_set_property"
@@ -150,15 +150,15 @@
     ("org_capture"
      (let ((result (org-mcp-mutate-capture
                     :file (plist-get args :file)
+                    :parent (plist-get args :parent)
                     :headline (plist-get args :headline)
-                    :heading (plist-get args :heading)
                     :state (plist-get args :state)
                     :properties (plist-get args :properties)
                     :body (plist-get args :body)
                     :template-key (plist-get args :template_key))))
        (org-mcp-notify-emit-entry-created
         (plist-get result :id) (plist-get result :file)
-        (plist-get args :heading) (plist-get args :state))
+        (plist-get args :headline) (plist-get args :state))
        result))
     (_ (signal 'org-mcp-method-not-found (list name)))))
 

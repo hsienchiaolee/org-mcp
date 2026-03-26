@@ -37,7 +37,7 @@
                       '(:jsonrpc "2.0" :id 2 :method "tools/call"
                         :params (:name "org_get_entry" :arguments (:id "integ-1")))))
                (result (plist-get resp :result)))
-          (should (equal (plist-get result :heading) "Build API")))
+          (should (equal (plist-get result :headline) "Build API")))
 
         ;; Get children
         (let* ((resp (org-mcp--dispatch

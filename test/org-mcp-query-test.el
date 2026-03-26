@@ -15,7 +15,7 @@ Body text here.
 "
     (let ((result (org-mcp-query-get-entry "test-abc123")))
       (should (equal (plist-get result :id) "test-abc123"))
-      (should (equal (plist-get result :heading) "Implement auth"))
+      (should (equal (plist-get result :headline) "Implement auth"))
       (should (equal (plist-get result :state) "TODO"))
       (should (member "work" (plist-get result :tags)))
       (should (member "backend" (plist-get result :tags)))
@@ -44,8 +44,8 @@ Body text here.
     (let* ((result (org-mcp-query-get-entry "test-nested"))
            (ancestors (plist-get result :ancestors)))
       (should (= (length ancestors) 2))
-      (should (equal (plist-get (car ancestors) :heading) "Sprint 1"))
-      (should (equal (plist-get (cadr ancestors) :heading) "Project Alpha")))))
+      (should (equal (plist-get (car ancestors) :headline) "Sprint 1"))
+      (should (equal (plist-get (cadr ancestors) :headline) "Project Alpha")))))
 
 (ert-deftest org-mcp-query-get-entry-with-timestamps ()
   "Scheduled and deadline timestamps are extracted."
@@ -90,15 +90,15 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
 :EFFORT: 1h
 :END:
 "
-    (let* ((result (org-mcp-query-query '(todo "TODO") nil '("id" "heading" "state" "properties")))
+    (let* ((result (org-mcp-query-query '(todo "TODO") nil '("id" "headline" "state" "properties")))
            (entry (car (plist-get result :entries))))
       (should (plist-get entry :id))
-      (should (plist-get entry :heading))
+      (should (plist-get entry :headline))
       (should (plist-get entry :state))
       (should (plist-get entry :properties)))))
 
 (ert-deftest org-mcp-query-default-columns ()
-  "Default columns are id, heading, state."
+  "Default columns are id, headline, state."
   (org-mcp-test-with-temp-org
       "* TODO Task A
 :PROPERTIES:
@@ -108,7 +108,7 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
     (let* ((result (org-mcp-query-query '(todo "TODO") nil nil))
            (entry (car (plist-get result :entries))))
       (should (plist-get entry :id))
-      (should (plist-get entry :heading))
+      (should (plist-get entry :headline))
       (should (plist-get entry :state))
       (should-not (plist-get entry :properties)))))
 
@@ -136,7 +136,7 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       ;; Only immediate children, not grandchildren
       (should (= (length (plist-get result :children)) 2))
       (let ((first (car (plist-get result :children))))
-        (should (equal (plist-get first :heading) "Subtask A"))
+        (should (equal (plist-get first :headline) "Subtask A"))
         (should (equal (plist-get first :state) "TODO"))))))
 
 (ert-deftest org-mcp-query-get-properties-basic ()

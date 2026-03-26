@@ -42,19 +42,19 @@ Returns plist with :id, :key, :value."
              :key key
              :value value)))))
 
-(defun org-mcp-mutate-set-heading (id heading)
-  "Set heading of entry ID to HEADING.
-Returns plist with :id, :old_heading, :new_heading."
+(defun org-mcp-mutate-set-headline (id headline)
+  "Set headline of entry ID to HEADLINE.
+Returns plist with :id, :old_headline, :new_headline."
   (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer
        (goto-char (cdr location))
-       (let ((old-heading (org-get-heading t t t t)))
-         (org-edit-headline heading)
+       (let ((old-headline (org-get-heading t t t t)))
+         (org-edit-headline headline)
          (save-buffer)
          (list :id id
-               :old_heading old-heading
-               :new_heading heading))))))
+               :old_headline old-headline
+               :new_headline headline))))))
 
 (defun org-mcp-mutate-append-body (id text &optional drawer)
   "Append TEXT to the body of entry ID.
@@ -94,24 +94,24 @@ Create the drawer if it does not exist."
     (unless found
       (insert ":" drawer-name ":\n" text "\n:END:\n"))))
 
-(cl-defun org-mcp-mutate-capture (&key file headline heading state properties body template-key)
+(cl-defun org-mcp-mutate-capture (&key file parent headline state properties body template-key)
   "Create a new Org entry.
 If TEMPLATE-KEY is provided, use that capture template.
-Otherwise, create from inline params under HEADLINE in FILE."
+Otherwise, create from inline params under PARENT in FILE."
   (if template-key
       (error "Template-based capture not yet implemented")
     (with-current-buffer (find-file-noselect file)
       (org-with-wide-buffer
        (goto-char (point-min))
        (unless (re-search-forward
-                (format org-complex-heading-regexp-format (regexp-quote headline))
+                (format org-complex-heading-regexp-format (regexp-quote parent))
                 nil t)
-         (signal 'org-mcp-entry-not-found (list headline)))
+         (signal 'org-mcp-entry-not-found (list parent)))
        (let ((parent-level (org-current-level)))
          (org-end-of-subtree t)
          (insert "\n" (make-string (1+ parent-level) ?*) " "
                  (if state (concat state " ") "")
-                 heading "\n")
+                 headline "\n")
          (let ((new-id (org-id-get-create)))
            (when properties
              (dolist (pair properties)

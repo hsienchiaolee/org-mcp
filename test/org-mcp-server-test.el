@@ -38,7 +38,7 @@
              (result (plist-get response :result)))
         (should result)
         (should (equal (plist-get result :id) "dispatch-1"))
-        (should (equal (plist-get result :heading) "Test task"))))))
+        (should (equal (plist-get result :headline) "Test task"))))))
 
 (ert-deftest org-mcp-dispatch-method-not-found ()
   "Unknown tool returns method-not-found error."

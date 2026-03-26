@@ -63,7 +63,7 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
   (let ((ancestors nil))
     (save-excursion
       (while (org-up-heading-safe)
-        (push (list :heading (substring-no-properties (org-get-heading t t t t))
+        (push (list :headline (substring-no-properties (org-get-heading t t t t))
                     :state (org-get-todo-state)
                     :properties (org-mcp-query--get-properties))
               ancestors)))
@@ -86,7 +86,7 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
        (goto-char (cdr location))
        (list :id id
              :file (buffer-file-name)
-             :heading (substring-no-properties (org-get-heading t t t t))
+             :headline (substring-no-properties (org-get-heading t t t t))
              :state (org-get-todo-state)
              :priority (let ((p (org-entry-get nil "PRIORITY")))
                          (when p (string-to-char p)))
@@ -98,7 +98,7 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
              :deadline (org-mcp-query--get-timestamp :deadline)
              :closed (org-mcp-query--get-timestamp :closed))))))
 
-(defconst org-mcp-query-default-columns '("id" "heading" "state")
+(defconst org-mcp-query-default-columns '("id" "headline" "state")
   "Default columns returned by org_query.")
 
 (defun org-mcp-query--project-entry (columns)
@@ -108,8 +108,8 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
       (dolist (col columns)
         (pcase col
           ("id" (setq result (plist-put result :id (org-id-get))))
-          ("heading" (setq result (plist-put result :heading
-                                             (substring-no-properties (org-get-heading t t t t)))))
+          ("headline" (setq result (plist-put result :headline
+                                              (substring-no-properties (org-get-heading t t t t)))))
           ("state" (setq result (plist-put result :state (org-get-todo-state))))
           ("tags" (setq result (plist-put result :tags (org-mcp-query--get-tags))))
           ("properties" (setq result (plist-put result :properties (org-mcp-query--get-properties))))
@@ -127,7 +127,7 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
 (defun org-mcp-query--compile (query)
   "Compile a query sexp into a predicate function.
 Supports: (todo STATE...), (tags TAG), (priority VAL),
-\(property KEY VAL), (heading REGEXP), (scheduled), (deadline),
+\(property KEY VAL), (headline REGEXP), (scheduled), (deadline),
 \(and ...), (or ...), (not PRED)."
   (pcase query
     (`(and . ,preds)
@@ -147,7 +147,7 @@ Supports: (todo STATE...), (tags TAG), (priority VAL),
      (lambda () (equal (org-entry-get nil "PRIORITY") val)))
     (`(property ,key ,val)
      (lambda () (equal (org-entry-get nil key) val)))
-    (`(heading ,regexp)
+    (`(headline ,regexp)
      (lambda () (string-match-p regexp (org-get-heading t t t t))))
     (`(scheduled)
      (lambda () (org-entry-get nil "SCHEDULED")))
@@ -176,7 +176,7 @@ If COLUMNS is nil, use `org-mcp-query-default-columns'.
 If COLUMNS is the string \"all\", return full entry data."
   (let* ((files (or files (org-agenda-files)))
          (cols (cond
-                ((equal columns "all") '("id" "heading" "state" "tags" "properties"
+                ((equal columns "all") '("id" "headline" "state" "tags" "properties"
                                          "priority" "file" "body" "ancestors"
                                          "scheduled" "deadline" "closed"))
                 ((null columns) org-mcp-query-default-columns)
@@ -189,7 +189,7 @@ If COLUMNS is the string \"all\", return full entry data."
 
 (defun org-mcp-query-get-children (id &optional columns)
   "Return immediate child entries of org-id ID.
-COLUMNS controls which fields are returned (default: id, heading, state)."
+COLUMNS controls which fields are returned (default: id, headline, state)."
   (let ((location (org-mcp-query--find-entry id))
         (cols (or columns org-mcp-query-default-columns)))
     (with-current-buffer (find-file-noselect (car location))
