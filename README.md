@@ -89,6 +89,3 @@ make test-server       # run only server tests
 make test-integration  # run only integration tests
 ```
 
-## License
-
-GPL-3.0-or-later
