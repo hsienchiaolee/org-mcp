@@ -5,6 +5,9 @@
 (require 'org)
 (require 'org-id)
 
+;; Redirect org-id-locations to a temp file for CI environments
+(setq org-id-locations-file (expand-file-name "org-id-locations" temporary-file-directory))
+
 (defmacro org-mcp-test-with-temp-org (contents &rest body)
   "Create a temp org file with CONTENTS, execute BODY in that buffer.
 The file is registered with `org-agenda-files' for the duration."
