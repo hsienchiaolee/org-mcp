@@ -42,6 +42,20 @@ Returns plist with :id, :key, :value."
              :key key
              :value value)))))
 
+(defun org-mcp-mutate-set-heading (id heading)
+  "Set heading of entry ID to HEADING.
+Returns plist with :id, :old_heading, :new_heading."
+  (let ((location (org-mcp-query--find-entry id)))
+    (with-current-buffer (find-file-noselect (car location))
+      (org-with-wide-buffer
+       (goto-char (cdr location))
+       (let ((old-heading (org-get-heading t t t t)))
+         (org-edit-headline heading)
+         (save-buffer)
+         (list :id id
+               :old_heading old-heading
+               :new_heading heading))))))
+
 (defun org-mcp-mutate-append-body (id text &optional drawer)
   "Append TEXT to the body of entry ID.
 If DRAWER is non-nil, append inside that named drawer (created if needed)."

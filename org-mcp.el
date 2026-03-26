@@ -48,6 +48,12 @@
                    :properties (:id (:type "string" :description "The org-id of the entry")
                                 :inherited (:type "boolean" :description "Include inherited properties; defaults to false"))
                    :required ["id"]))
+    (:name "org_set_heading"
+     :description "Rename the heading of an entry."
+     :inputSchema (:type "object"
+                   :properties (:id (:type "string" :description "The org-id of the entry")
+                                :heading (:type "string" :description "New heading text"))
+                   :required ["id" "heading"]))
     (:name "org_set_state"
      :description "Set the TODO keyword of an entry."
      :inputSchema (:type "object"
@@ -129,6 +135,8 @@
      (org-mcp-query-get-children (plist-get args :id) (plist-get args :columns)))
     ("org_get_properties"
      (org-mcp-query-get-properties (plist-get args :id) (plist-get args :inherited)))
+    ("org_set_heading"
+     (org-mcp-mutate-set-heading (plist-get args :id) (plist-get args :heading)))
     ("org_set_state"
      (org-mcp-mutate-set-state (plist-get args :id) (plist-get args :state)))
     ("org_set_property"

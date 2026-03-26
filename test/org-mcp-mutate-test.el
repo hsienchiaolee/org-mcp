@@ -121,5 +121,21 @@ Existing body.
         (should (equal (plist-get entry :heading) "New task"))
         (should (equal (plist-get entry :state) "TODO"))))))
 
+(ert-deftest org-mcp-mutate-set-heading ()
+  "Rename a heading on an entry."
+  (org-mcp-test-with-temp-org
+      "* TODO Old Name
+:PROPERTIES:
+:ID: mut-heading-1
+:END:
+"
+    (let ((result (org-mcp-mutate-set-heading "mut-heading-1" "New Name")))
+      (should (equal (plist-get result :id) "mut-heading-1"))
+      (should (equal (plist-get result :old_heading) "Old Name"))
+      (should (equal (plist-get result :new_heading) "New Name"))
+      (let ((entry (org-mcp-query-get-entry "mut-heading-1")))
+        (should (equal (plist-get entry :heading) "New Name"))
+        (should (equal (plist-get entry :state) "TODO"))))))
+
 (provide 'org-mcp-mutate-test)
 ;;; org-mcp-mutate-test.el ends here
