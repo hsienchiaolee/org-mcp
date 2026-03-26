@@ -1,5 +1,7 @@
 ;;; org-mcp-notify.el --- Notification layer for org-mcp -*- lexical-binding: t; -*-
 
+;; URL: https://github.com/hsienchiaolee/org-mcp
+
 ;;; Commentary:
 
 ;; Bridges Org hooks to MCP notifications. Emits JSON-RPC notifications
@@ -10,6 +12,9 @@
 (require 'org)
 (require 'org-id)
 (require 'org-mcp-rpc)
+
+(defvar org-last-state)
+(defvar org-state)
 
 (defvar org-mcp-notify--enabled nil
   "Non-nil when notification hooks are active.")

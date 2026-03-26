@@ -1,5 +1,7 @@
 ;;; org-mcp-mutate.el --- Mutation tools for org-mcp -*- lexical-binding: t; -*-
 
+;; URL: https://github.com/hsienchiaolee/org-mcp
+
 ;;; Commentary:
 
 ;; Implements write tools: org_set_state, org_set_property.
@@ -58,10 +60,9 @@ If DRAWER is non-nil, append inside that named drawer (created if needed)."
 (defun org-mcp-mutate--append-to-body (text)
   "Append TEXT to the body of the entry at point."
   (org-end-of-meta-data t)
-  (let ((content-start (point)))
-    (outline-next-heading)
-    (unless (eobp) (forward-char -1))
-    (insert (if (bolp) "" "\n") text "\n")))
+  (outline-next-heading)
+  (unless (eobp) (forward-char -1))
+  (insert (if (bolp) "" "\n") text "\n"))
 
 (defun org-mcp-mutate--append-to-drawer (drawer-name text)
   "Append TEXT inside DRAWER-NAME drawer at the entry at point.
