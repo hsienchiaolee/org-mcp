@@ -84,7 +84,10 @@
                                 :properties (:type "object" :description "Property key-value pairs")
                                 :body (:type "string" :description "Body text")
                                 :template_key (:type "string" :description "Capture template key"))
-                   :required ["headline"])))
+                   :required ["headline"]))
+    (:name "org_list_files"
+     :description "Return the list of org-agenda-files."
+     :inputSchema (:type "object")))
   "MCP tool definitions with JSON Schema input specs.")
 
 (defun org-mcp--handle-initialize (id _params)
@@ -160,6 +163,8 @@
         (plist-get result :id) (plist-get result :file)
         (plist-get args :headline) (plist-get args :state))
        result))
+    ("org_list_files"
+     (org-mcp-query-list-files))
     (_ (signal 'org-mcp-method-not-found (list name)))))
 
 (define-error 'org-mcp-method-not-found "Method not found")

@@ -204,5 +204,13 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
         (should (= (plist-get mid :level) 2))
         (should (= (plist-get deep :level) 3))))))
 
+(ert-deftest org-mcp-query-list-files ()
+  "List agenda files."
+  (org-mcp-test-with-temp-org "* Task\n"
+    (let ((result (org-mcp-query-list-files)))
+      (should (vectorp (plist-get result :files)))
+      (should (= (length (plist-get result :files)) 1))
+      (should (string-match-p "\\.org$" (aref (plist-get result :files) 0))))))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here
