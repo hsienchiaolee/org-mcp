@@ -85,6 +85,10 @@
                                 :body (:type "string" :description "Body text")
                                 :template_key (:type "string" :description "Capture template key"))
                    :required ["headline"]))
+    (:name "org_get_config"
+     :description "Return TODO keyword sequences and tags for an agenda file."
+     :inputSchema (:type "object"
+                   :properties (:file (:type "string" :description "File path; defaults to first agenda file"))))
     (:name "org_list_files"
      :description "Return the list of org-agenda-files."
      :inputSchema (:type "object")))
@@ -163,6 +167,8 @@
         (plist-get result :id) (plist-get result :file)
         (plist-get args :headline) (plist-get args :state))
        result))
+    ("org_get_config"
+     (org-mcp-query-get-config (plist-get args :file)))
     ("org_list_files"
      (org-mcp-query-list-files))
     (_ (signal 'org-mcp-method-not-found (list name)))))

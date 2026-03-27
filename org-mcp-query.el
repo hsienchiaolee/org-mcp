@@ -235,6 +235,33 @@ When INHERITED is non-nil, include properties inherited from ancestors."
                      (setq result (plist-put result (intern (concat ":" key)) val))))))
              (list :properties result))))))))
 
+(defun org-mcp-query--parse-todo-sequence (line)
+  "Parse a TODO keyword LINE string into a plist with :active and :done."
+  (let* ((parts (split-string line "|"))
+         (active (split-string (string-trim (car parts))))
+         (done (when (cdr parts) (split-string (string-trim (cadr parts))))))
+    (list :active (vconcat active) :done (vconcat done))))
+
+(defun org-mcp-query-get-config (&optional file)
+  "Return TODO keywords and tags for FILE (or first agenda file)."
+  (let ((f (or file (car (org-agenda-files)))))
+    (with-current-buffer (find-file-noselect f)
+      (let* ((collected (org-collect-keywords '("TODO" "SEQ_TODO" "TYP_TODO" "TAGS")))
+             (todo-lines (mapcar #'cadr (seq-filter (lambda (e) (member (car e) '("TODO" "SEQ_TODO" "TYP_TODO"))) collected)))
+             (tag-lines (mapcar #'cadr (seq-filter (lambda (e) (equal (car e) "TAGS")) collected)))
+             (keywords (if todo-lines
+                           (mapcar #'org-mcp-query--parse-todo-sequence todo-lines)
+                         (mapcar (lambda (e)
+                                   (org-mcp-query--parse-todo-sequence
+                                    (mapconcat #'identity (cdr e) " ")))
+                                 (seq-filter #'listp org-todo-keywords))))
+             (tags (if tag-lines
+                       (mapcan (lambda (l) (split-string (string-trim l))) tag-lines)
+                     (mapcar #'car (seq-filter (lambda (e) (stringp (car e))) org-tag-alist)))))
+        (list :todo_keywords (vconcat keywords)
+              :tags (vconcat tags)
+              :file f)))))
+
 (defun org-mcp-query-list-files ()
   "Return the list of agenda files."
   (list :files (vconcat (org-agenda-files))))

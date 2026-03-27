@@ -212,5 +212,35 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       (should (= (length (plist-get result :files)) 1))
       (should (string-match-p "\\.org$" (aref (plist-get result :files) 0))))))
 
+(ert-deftest org-mcp-query-get-config-default ()
+  "Get config with default TODO keywords."
+  (org-mcp-test-with-temp-org "* TODO Task\n"
+    (let ((result (org-mcp-query-get-config temp-file)))
+      (should (plist-get result :file))
+      (let ((kw (plist-get result :todo_keywords)))
+        (should (vectorp kw))
+        (should (>= (length kw) 1))
+        ;; Default org has TODO | DONE
+        (let ((seq (aref kw 0)))
+          (should (vectorp (plist-get seq :active)))
+          (should (vectorp (plist-get seq :done))))))))
+
+(ert-deftest org-mcp-query-get-config-custom ()
+  "Get config with in-buffer TODO and TAGS settings."
+  (org-mcp-test-with-temp-org
+      "#+TODO: OPEN REVIEW | MERGED CLOSED
+#+TAGS: bug feature docs
+* OPEN Task
+"
+    (let ((result (org-mcp-query-get-config temp-file)))
+      (let* ((kw (plist-get result :todo_keywords))
+             (seq (aref kw 0)))
+        (should (equal (plist-get seq :active) ["OPEN" "REVIEW"]))
+        (should (equal (plist-get seq :done) ["MERGED" "CLOSED"])))
+      (let ((tags (plist-get result :tags)))
+        (should (member "bug" (append tags nil)))
+        (should (member "feature" (append tags nil)))
+        (should (member "docs" (append tags nil)))))))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here
