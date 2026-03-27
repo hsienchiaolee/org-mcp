@@ -30,7 +30,7 @@
                    :properties (:id (:type "string" :description "The org-id of the entry"))
                    :required ["id"]))
     (:name "org_query"
-     :description "Run a query across agenda files and return matching entries."
+     :description "Run a query across agenda files and return matching entries. Available columns: id, headline, state, tags, properties, priority, file, body, ancestors, scheduled, deadline, closed, level."
      :inputSchema (:type "object"
                    :properties (:query (:type "string" :description "Query s-expression as a string")
                                 :files (:type "array" :items (:type "string") :description "Files to search; defaults to org-agenda-files")

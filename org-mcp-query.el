@@ -121,7 +121,8 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
           ("ancestors" (setq result (plist-put result :ancestors (org-mcp-query--get-ancestors))))
           ("scheduled" (setq result (plist-put result :scheduled (org-mcp-query--get-timestamp :scheduled))))
           ("deadline" (setq result (plist-put result :deadline (org-mcp-query--get-timestamp :deadline))))
-          ("closed" (setq result (plist-put result :closed (org-mcp-query--get-timestamp :closed))))))
+          ("closed" (setq result (plist-put result :closed (org-mcp-query--get-timestamp :closed))))
+          ("level" (setq result (plist-put result :level (org-current-level))))))
       result)))
 
 (defun org-mcp-query--compile (query)
@@ -178,7 +179,7 @@ If COLUMNS is the string \"all\", return full entry data."
          (cols (cond
                 ((equal columns "all") '("id" "headline" "state" "tags" "properties"
                                          "priority" "file" "body" "ancestors"
-                                         "scheduled" "deadline" "closed"))
+                                         "scheduled" "deadline" "closed" "level"))
                 ((null columns) org-mcp-query-default-columns)
                 (t columns)))
          (predicate (org-mcp-query--compile query))
@@ -233,6 +234,10 @@ When INHERITED is non-nil, include properties inherited from ancestors."
                    (when val
                      (setq result (plist-put result (intern (concat ":" key)) val))))))
              (list :properties result))))))))
+
+(defun org-mcp-query-list-files ()
+  "Return the list of agenda files."
+  (list :files (vconcat (org-agenda-files))))
 
 (provide 'org-mcp-query)
 ;;; org-mcp-query.el ends here

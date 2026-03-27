@@ -178,5 +178,31 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       ;; With inheritance, parent's EFFORT should appear
       (should (equal (plist-get (plist-get result :properties) :EFFORT) "4h")))))
 
+(ert-deftest org-mcp-query-level-column ()
+  "Query with level column returns correct heading depth."
+  (org-mcp-test-with-temp-org
+      "* TODO Top Level
+:PROPERTIES:
+:ID: lvl-1
+:END:
+** TODO Nested
+:PROPERTIES:
+:ID: lvl-2
+:END:
+*** TODO Deep
+:PROPERTIES:
+:ID: lvl-3
+:END:
+"
+    (let* ((result (org-mcp-query-query '(todo "TODO") nil '("id" "headline" "level")))
+           (entries (plist-get result :entries)))
+      (should (= (plist-get result :count) 3))
+      (let ((top (cl-find "lvl-1" entries :key (lambda (e) (plist-get e :id)) :test #'equal))
+            (mid (cl-find "lvl-2" entries :key (lambda (e) (plist-get e :id)) :test #'equal))
+            (deep (cl-find "lvl-3" entries :key (lambda (e) (plist-get e :id)) :test #'equal)))
+        (should (= (plist-get top :level) 1))
+        (should (= (plist-get mid :level) 2))
+        (should (= (plist-get deep :level) 3))))))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here
