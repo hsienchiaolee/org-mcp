@@ -12,7 +12,8 @@
   "Create a temp org file with CONTENTS, execute BODY in that buffer.
 The file is registered with `org-agenda-files' for the duration."
   (declare (indent 1))
-  `(let ((temp-file (make-temp-file "org-mcp-test-" nil ".org")))
+  `(let* ((temp-dir (file-truename (make-temp-file "org-mcp-test-" t)))
+          (temp-file (expand-file-name "test.org" temp-dir)))
      (unwind-protect
          (progn
            (with-current-buffer (find-file-noselect temp-file)
@@ -23,7 +24,7 @@ The file is registered with `org-agenda-files' for the duration."
              ,@body))
        (when (get-file-buffer temp-file)
          (kill-buffer (get-file-buffer temp-file)))
-       (delete-file temp-file))))
+       (delete-directory temp-dir t))))
 
 (defun org-mcp-test-parse-json (string)
   "Parse JSON STRING to plist."

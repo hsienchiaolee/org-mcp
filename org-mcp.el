@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'org-mcp-rpc)
+(require 'org-mcp-access)
 (require 'org-mcp-query)
 (require 'org-mcp-mutate)
 (require 'org-mcp-notify)
@@ -114,6 +115,11 @@
     (condition-case err
         (let ((result (org-mcp--call-tool name args)))
           `(:jsonrpc "2.0" :id ,id :result ,result))
+      (org-mcp-access-denied
+       `(:jsonrpc "2.0" :id ,id
+         :error (:code ,org-mcp-rpc-error-invalid-params
+                 :message "File not in allowed directories"
+                 :data (:file ,(cadr err)))))
       (org-mcp-entry-not-found
        `(:jsonrpc "2.0" :id ,id
          :error (:code ,org-mcp-rpc-error-invalid-params

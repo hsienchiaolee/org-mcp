@@ -14,12 +14,14 @@
 (require 'org-id)
 (require 'org-element)
 (require 'org-mcp-rpc)
+(require 'org-mcp-access)
 
 (defun org-mcp-query--find-entry (id)
   "Find entry by org-id ID. Return (file . position) or signal error."
   (let ((location (org-id-find id)))
     (unless location
       (signal 'org-mcp-entry-not-found (list id)))
+    (org-mcp-check-access (car location))
     location))
 
 (defun org-mcp-query--get-tags ()
@@ -175,7 +177,10 @@ Supports: (todo STATE...), (tags TAG), (priority VAL),
 COLUMNS controls which fields are returned per entry.
 If COLUMNS is nil, use `org-mcp-query-default-columns'.
 If COLUMNS is the string \"all\", return full entry data."
-  (let* ((files (or files (org-agenda-files)))
+  (let* ((files (seq-filter (lambda (f) (condition-case nil
+                                              (org-mcp-check-access f)
+                                            (org-mcp-access-denied nil)))
+                            (or files (org-agenda-files))))
          (cols (cond
                 ((equal columns "all") '("id" "headline" "state" "tags" "properties"
                                          "priority" "file" "body" "ancestors"

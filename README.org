@@ -80,6 +80,16 @@ Add to your MCP client config (e.g. =claude_desktop_config.json=):
 }
 #+end_src
 
+* Access Control
+
+By default, org-mcp restricts file access to directories containing your =org-agenda-files=. To explicitly configure which directories are accessible:
+
+#+begin_src emacs-lisp
+(setq org-mcp-allowed-directories '("~/org/" "~/projects/plans/"))
+#+end_src
+
+Any tool call that attempts to read or write a file outside these directories will be rejected with a JSON-RPC error. When =org-mcp-allowed-directories= is =nil= (the default), the directories containing your =org-agenda-files= are used.
+
 * Tools
 
 | Tool                 | Description                                        |

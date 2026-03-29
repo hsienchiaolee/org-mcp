@@ -12,6 +12,7 @@
 (require 'org)
 (require 'org-id)
 (require 'org-mcp-query)
+(require 'org-mcp-access)
 
 (defun org-mcp-mutate-set-state (id state)
   "Set TODO state of entry ID to STATE. Pass nil to clear.
@@ -105,6 +106,8 @@ HEADLINE is always required."
     (error "Headline is required"))
   (unless (or parent file)
     (error "Either parent or file is required"))
+  (when file
+    (org-mcp-check-access file))
   (if parent
       (let ((location (org-mcp-query--find-entry parent)))
         (with-current-buffer (find-file-noselect (car location))
