@@ -18,6 +18,7 @@
 (require 'org-mcp-query)
 (require 'org-mcp-mutate)
 (require 'org-mcp-notify)
+(require 'org-mcp-log)
 
 (defvar org-mcp--initialized nil
   "Non-nil after successful initialize handshake.")
@@ -140,6 +141,7 @@
 
 (defun org-mcp--call-tool (name args)
   "Call tool NAME with ARGS plist. Return result plist."
+  (org-mcp-log name args)
   (pcase name
     ("org_get_entry"
      (org-mcp-query-get-entry (plist-get args :id)))

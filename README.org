@@ -90,6 +90,16 @@ By default, org-mcp restricts file access to directories containing your =org-ag
 
 Any tool call that attempts to read or write a file outside these directories will be rejected with a JSON-RPC error. When =org-mcp-allowed-directories= is =nil= (the default), the directories containing your =org-agenda-files= are used.
 
+* Audit Logging
+
+To log mutation tool calls (=org_set_state=, =org_set_property=, =org_set_headline=, =org_append_body=, =org_capture=) to a file:
+
+#+begin_src emacs-lisp
+(setq org-mcp-log-file "~/org/mcp-audit.log")
+#+end_src
+
+When set, each mutation is appended as a timestamped line. Disabled by default.
+
 * Tools
 
 | Tool                 | Description                                        |
