@@ -14,9 +14,41 @@
 (require 'org-mcp-query)
 (require 'org-mcp-access)
 
+(define-error 'org-mcp-invalid-input "Invalid input")
+
+(defun org-mcp-mutate--validate-headline (text)
+  "Signal `org-mcp-invalid-input' if TEXT is not a valid headline."
+  (when (or (string-empty-p text)
+            (string-blank-p text)
+            (string-match-p "\n" text)
+            (string-match-p "^\\*" text))
+    (signal 'org-mcp-invalid-input (list "Invalid headline"))))
+
+(defun org-mcp-mutate--validate-property-key (key)
+  "Signal `org-mcp-invalid-input' if KEY is not a valid property name."
+  (when (or (string-empty-p key)
+            (string-blank-p key)
+            (string-match-p "\n" key))
+    (signal 'org-mcp-invalid-input (list "Invalid property key"))))
+
+(defun org-mcp-mutate--validate-body (text)
+  "Signal `org-mcp-invalid-input' if TEXT would corrupt org structure."
+  (when (string-match-p "^\\*+ " text)
+    (signal 'org-mcp-invalid-input (list "Body contains org heading")))
+  (let ((begins 0) (ends 0) (start 0))
+    (while (string-match "#\\+BEGIN_" text start)
+      (setq begins (1+ begins) start (match-end 0)))
+    (setq start 0)
+    (while (string-match "#\\+END_" text start)
+      (setq ends (1+ ends) start (match-end 0)))
+    (unless (= begins ends)
+      (signal 'org-mcp-invalid-input (list "Unbalanced #+BEGIN/#+END blocks")))))
+
 (defun org-mcp-mutate-set-state (id state)
   "Set TODO state of entry ID to STATE. Pass nil to clear.
-Returns plist with :id, :old_state, :new_state."
+Returns plist with :id, :old_state, :new_state.
+State validation is handled by `org-todo' which signals an error for
+invalid keywords."
   (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer
@@ -31,6 +63,7 @@ Returns plist with :id, :old_state, :new_state."
 (defun org-mcp-mutate-set-property (id key value)
   "Set property KEY to VALUE on entry ID. Pass nil VALUE to delete.
 Returns plist with :id, :key, :value."
+  (org-mcp-mutate--validate-property-key key)
   (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer
@@ -46,6 +79,7 @@ Returns plist with :id, :key, :value."
 (defun org-mcp-mutate-set-headline (id headline)
   "Set headline of entry ID to HEADLINE.
 Returns plist with :id, :old_headline, :new_headline."
+  (org-mcp-mutate--validate-headline headline)
   (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer
@@ -60,6 +94,7 @@ Returns plist with :id, :old_headline, :new_headline."
 (defun org-mcp-mutate-append-body (id text &optional drawer)
   "Append TEXT to the body of entry ID.
 If DRAWER is non-nil, append inside that named drawer (created if needed)."
+  (org-mcp-mutate--validate-body text)
   (let ((location (org-id-find id)))
     (unless location
       (signal 'org-mcp-entry-not-found (list id)))
@@ -104,6 +139,7 @@ HEADLINE is always required."
     (error "Template-based capture not yet implemented"))
   (unless headline
     (error "Headline is required"))
+  (org-mcp-mutate--validate-headline headline)
   (unless (or parent file)
     (error "Either parent or file is required"))
   (when file

@@ -145,5 +145,62 @@ Existing body.
         (should (equal (plist-get entry :headline) "New Name"))
         (should (equal (plist-get entry :state) "TODO"))))))
 
+;;; Input validation
+
+(ert-deftest org-mcp-mutate-validate-headline ()
+  "Validate headline text rejects empty, whitespace-only, and newlines."
+  (org-mcp-test-with-temp-org
+      "* TODO Task
+:PROPERTIES:
+:ID: mut-val-hl
+:END:
+"
+    (dolist (case '(("Valid headline"  success)
+                    (""                error)
+                    ("   "             error)
+                    ("Bad\nheadline"   error)
+                    ("* Star heading"  error)
+                    ("** Two stars"    error)))
+      (if (eq (nth 1 case) 'error)
+          (should-error (org-mcp-mutate-set-headline "mut-val-hl" (nth 0 case))
+                        :type 'org-mcp-invalid-input)
+        (org-mcp-mutate-set-headline "mut-val-hl" (nth 0 case))))))
+
+(ert-deftest org-mcp-mutate-validate-property-key ()
+  "Validate property key rejects empty, whitespace-only, and newline keys."
+  (org-mcp-test-with-temp-org
+      "* TODO Task
+:PROPERTIES:
+:ID: mut-val-prop
+:END:
+"
+    (dolist (case '(("ASSIGNEE"    success)
+                    (""            error)
+                    ("   "         error)
+                    ("KEY\nINJECT" error)))
+      (if (eq (nth 1 case) 'error)
+          (should-error (org-mcp-mutate-set-property "mut-val-prop" (nth 0 case) "val")
+                        :type 'org-mcp-invalid-input)
+        (org-mcp-mutate-set-property "mut-val-prop" (nth 0 case) "val")))))
+
+(ert-deftest org-mcp-mutate-validate-body ()
+  "Validate body rejects headings and unbalanced blocks."
+  (org-mcp-test-with-temp-org
+      "* TODO Task
+:PROPERTIES:
+:ID: mut-val-body
+:END:
+"
+    (dolist (case '(("Normal text"                     success)
+                    ("   "                             success)
+                    ("#+BEGIN_SRC\ncode\n#+END_SRC"     success)
+                    ("* Injected heading"               error)
+                    ("** Also injected"                 error)
+                    ("#+BEGIN_SRC\ncode here"           error)))
+      (if (eq (nth 1 case) 'error)
+          (should-error (org-mcp-mutate-append-body "mut-val-body" (nth 0 case))
+                        :type 'org-mcp-invalid-input)
+        (org-mcp-mutate-append-body "mut-val-body" (nth 0 case))))))
+
 (provide 'org-mcp-mutate-test)
 ;;; org-mcp-mutate-test.el ends here

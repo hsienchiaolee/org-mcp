@@ -115,6 +115,10 @@
     (condition-case err
         (let ((result (org-mcp--call-tool name args)))
           `(:jsonrpc "2.0" :id ,id :result ,result))
+      (org-mcp-invalid-input
+       `(:jsonrpc "2.0" :id ,id
+         :error (:code ,org-mcp-rpc-error-invalid-params
+                 :message ,(cadr err))))
       (org-mcp-access-denied
        `(:jsonrpc "2.0" :id ,id
          :error (:code ,org-mcp-rpc-error-invalid-params
