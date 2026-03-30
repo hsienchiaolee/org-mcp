@@ -202,5 +202,22 @@ Existing body.
                         :type 'org-mcp-invalid-input)
         (org-mcp-mutate-append-body "mut-val-body" (nth 0 case))))))
 
+(ert-deftest org-mcp-mutate-validate-body-multiline-heading ()
+  "Body with heading after newline is rejected."
+  (org-mcp-test-with-temp-org
+      "* TODO Task
+:PROPERTIES:
+:ID: mut-val-body-ml
+:END:
+"
+    (dolist (case '(("line one\n* Injected heading"     error)
+                    ("line one\n** Deep heading"         error)
+                    ("line one\nno heading here"         success)
+                    ("line one\n  * not a heading"       success)))
+      (if (eq (nth 1 case) 'error)
+          (should-error (org-mcp-mutate-append-body "mut-val-body-ml" (nth 0 case))
+                        :type 'org-mcp-invalid-input)
+        (org-mcp-mutate-append-body "mut-val-body-ml" (nth 0 case))))))
+
 (provide 'org-mcp-mutate-test)
 ;;; org-mcp-mutate-test.el ends here
