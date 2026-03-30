@@ -95,9 +95,7 @@ Returns plist with :id, :old_headline, :new_headline."
   "Append TEXT to the body of entry ID.
 If DRAWER is non-nil, append inside that named drawer (created if needed)."
   (org-mcp-mutate--validate-body text)
-  (let ((location (org-id-find id)))
-    (unless location
-      (signal 'org-mcp-entry-not-found (list id)))
+  (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer
        (goto-char (cdr location))

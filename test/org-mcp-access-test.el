@@ -101,6 +101,21 @@
 
 ;;; Integration: capture checks file access
 
+(ert-deftest org-mcp-access-append-body-denied ()
+  "org-mcp-mutate-append-body signals access-denied for files outside allowed dirs."
+  (org-mcp-test-with-temp-org
+      "* Task
+:PROPERTIES:
+:ID: acc-body-1
+:END:
+"
+    (let* ((other-dir (make-temp-file "org-mcp-sec-other-" t))
+           (org-mcp-allowed-directories (list other-dir)))
+      (unwind-protect
+          (should-error (org-mcp-mutate-append-body "acc-body-1" "text")
+                        :type 'org-mcp-access-denied)
+        (delete-directory other-dir)))))
+
 (ert-deftest org-mcp-access-capture-file-denied ()
   "org-mcp-mutate-capture signals access-denied when target file is disallowed."
   (org-mcp-test-with-temp-org "* Existing\n"
