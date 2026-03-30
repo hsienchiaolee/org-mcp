@@ -269,8 +269,11 @@ When INHERITED is non-nil, include properties inherited from ancestors."
               :file f)))))
 
 (defun org-mcp-query-list-files ()
-  "Return the list of agenda files."
-  (list :files (vconcat (org-agenda-files))))
+  "Return the list of agenda files, filtered by access control."
+  (list :files (vconcat (seq-filter (lambda (f) (condition-case nil
+                                                    (org-mcp-check-access f)
+                                                  (org-mcp-access-denied nil)))
+                                    (org-agenda-files)))))
 
 (provide 'org-mcp-query)
 ;;; org-mcp-query.el ends here

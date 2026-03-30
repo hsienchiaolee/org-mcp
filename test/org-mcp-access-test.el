@@ -144,5 +144,25 @@
                         :type 'org-mcp-access-denied)
         (delete-directory other-dir)))))
 
+(ert-deftest org-mcp-access-list-files-filters ()
+  "org-mcp-query-list-files only returns files in allowed directories."
+  (org-mcp-test-with-temp-org "* Test\n"
+    (let* ((other-dir (make-temp-file "org-mcp-sec-other-" t))
+           (other-file (expand-file-name "other.org" other-dir))
+           (org-mcp-allowed-directories (list other-dir)))
+      (unwind-protect
+          (progn
+            (write-region "* Other\n" nil other-file)
+            (let ((org-agenda-files (list (car org-agenda-files) other-file)))
+              (let* ((result (org-mcp-query-list-files))
+                     (files (append (plist-get result :files) nil)))
+                ;; Only the file in other-dir (allowed) should appear
+                (should (= (length files) 1))
+                (should (string-match-p "other\\.org" (car files))))))
+        (when (get-file-buffer other-file)
+          (kill-buffer (get-file-buffer other-file)))
+        (delete-file other-file)
+        (delete-directory other-dir)))))
+
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here
