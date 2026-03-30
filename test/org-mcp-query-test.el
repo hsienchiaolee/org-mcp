@@ -61,6 +61,23 @@ SCHEDULED: <2026-03-25 Wed> DEADLINE: <2026-03-28 Sat>
       (should (equal (plist-get result :deadline) "2026-03-28"))
       (should (null (plist-get result :closed))))))
 
+(ert-deftest org-mcp-query-get-entry-body-with-planning-and-props ()
+  "Body excludes both planning line and property drawer."
+  (org-mcp-test-with-temp-org
+      "* TODO Task with both
+SCHEDULED: <2026-03-25 Wed>
+:PROPERTIES:
+:ID: test-plan-prop
+:EFFORT: 1h
+:END:
+Actual body content.
+"
+    (let ((result (org-mcp-query-get-entry "test-plan-prop")))
+      (should (equal (plist-get result :body) "Actual body content."))
+      (should-not (string-match-p "SCHEDULED" (plist-get result :body)))
+      (should-not (string-match-p "PROPERTIES" (plist-get result :body)))
+      (should-not (string-match-p "EFFORT" (plist-get result :body))))))
+
 (ert-deftest org-mcp-query-basic ()
   "Query entries matching an org-ql sexp."
   (org-mcp-test-with-temp-org

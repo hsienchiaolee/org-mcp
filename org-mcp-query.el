@@ -50,11 +50,11 @@ Excludes standard Org properties (ID, CATEGORY, etc.)."
       (when (and contents-begin contents-end)
         (save-excursion
           (goto-char contents-begin)
-          ;; Skip past property drawer and planning lines
+          ;; Skip past planning lines and property drawer (in Org order)
+          (when (looking-at org-planning-line-re)
+            (forward-line))
           (when (looking-at org-property-drawer-re)
             (goto-char (match-end 0))
-            (forward-line))
-          (when (looking-at org-planning-line-re)
             (forward-line))
           (let ((body-start (point)))
             (string-trim
