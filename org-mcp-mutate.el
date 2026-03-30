@@ -138,6 +138,10 @@ HEADLINE is always required."
   (unless headline
     (error "Headline is required"))
   (org-mcp-mutate--validate-headline headline)
+  (when (and state (string-match-p "\n" state))
+    (signal 'org-mcp-invalid-input (list "State must not contain newlines")))
+  (when body
+    (org-mcp-mutate--validate-body body))
   (unless (or parent file)
     (error "Either parent or file is required"))
   (when file

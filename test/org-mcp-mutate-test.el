@@ -236,6 +236,34 @@ Existing body.
       (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
         (should (string-match-p "Some body text here" (plist-get entry :body)))))))
 
+(ert-deftest org-mcp-mutate-capture-validates-state ()
+  "Capture rejects state containing newlines."
+  (org-mcp-test-with-temp-org
+      "* Projects
+:PROPERTIES:
+:ID: cap-val-state
+:END:
+"
+    (should-error (org-mcp-mutate-capture
+                   :parent "cap-val-state"
+                   :headline "Task"
+                   :state "TODO\nINJECT")
+                  :type 'org-mcp-invalid-input)))
+
+(ert-deftest org-mcp-mutate-capture-validates-body ()
+  "Capture rejects body that would corrupt org structure."
+  (org-mcp-test-with-temp-org
+      "* Projects
+:PROPERTIES:
+:ID: cap-val-body
+:END:
+"
+    (should-error (org-mcp-mutate-capture
+                   :parent "cap-val-body"
+                   :headline "Task"
+                   :body "* Injected heading")
+                  :type 'org-mcp-invalid-input)))
+
 (ert-deftest org-mcp-mutate-validate-body-multiline-heading ()
   "Body with heading after newline is rejected."
   (org-mcp-test-with-temp-org
