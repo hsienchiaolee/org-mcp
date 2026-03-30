@@ -165,8 +165,8 @@ HEADLINE is always required."
   "Finalize a captured entry at point: assign ID, set PROPERTIES, insert BODY."
   (let ((new-id (org-id-get-create)))
     (when properties
-      (dolist (pair properties)
-        (org-set-property (car pair) (cdr pair))))
+      (cl-loop for (key val) on properties by #'cddr
+               do (org-set-property (substring (symbol-name key) 1) val)))
     (when body
       (org-end-of-meta-data t)
       (insert body "\n"))

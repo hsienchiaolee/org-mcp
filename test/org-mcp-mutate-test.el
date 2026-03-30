@@ -202,6 +202,40 @@ Existing body.
                         :type 'org-mcp-invalid-input)
         (org-mcp-mutate-append-body "mut-val-body" (nth 0 case))))))
 
+(ert-deftest org-mcp-mutate-capture-with-properties ()
+  "Capture with properties sets them on the new entry."
+  (org-mcp-test-with-temp-org
+      "* Projects
+:PROPERTIES:
+:ID: cap-props-parent
+:END:
+"
+    (let ((result (org-mcp-mutate-capture
+                   :parent "cap-props-parent"
+                   :headline "New Task"
+                   :state "TODO"
+                   :properties '(:EFFORT "2h" :ASSIGNEE "alice"))))
+      (should (plist-get result :id))
+      (let ((props (plist-get (org-mcp-query-get-properties (plist-get result :id)) :properties)))
+        (should (equal (plist-get props :EFFORT) "2h"))
+        (should (equal (plist-get props :ASSIGNEE) "alice"))))))
+
+(ert-deftest org-mcp-mutate-capture-with-body ()
+  "Capture with body text inserts it in the new entry."
+  (org-mcp-test-with-temp-org
+      "* Projects
+:PROPERTIES:
+:ID: cap-body-parent
+:END:
+"
+    (let ((result (org-mcp-mutate-capture
+                   :parent "cap-body-parent"
+                   :headline "New Task"
+                   :body "Some body text here.")))
+      (should (plist-get result :id))
+      (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
+        (should (string-match-p "Some body text here" (plist-get entry :body)))))))
+
 (ert-deftest org-mcp-mutate-validate-body-multiline-heading ()
   "Body with heading after newline is rejected."
   (org-mcp-test-with-temp-org
