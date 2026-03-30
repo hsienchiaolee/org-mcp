@@ -31,6 +31,13 @@
             (string-match-p "\n" key))
     (signal 'org-mcp-invalid-input (list "Invalid property key"))))
 
+(defun org-mcp-mutate--validate-drawer-name (name)
+  "Signal `org-mcp-invalid-input' if NAME is not a valid drawer name."
+  (when (or (string-empty-p name)
+            (not (string-match-p "\\`[A-Za-z][A-Za-z0-9_-]*\\'" name))
+            (member (upcase name) '("END" "PROPERTIES")))
+    (signal 'org-mcp-invalid-input (list "Invalid drawer name"))))
+
 (defun org-mcp-mutate--validate-body (text)
   "Signal `org-mcp-invalid-input' if TEXT would corrupt org structure."
   (when (string-match-p "^\\*+ " text)
@@ -95,6 +102,7 @@ Returns plist with :id, :old_headline, :new_headline."
   "Append TEXT to the body of entry ID.
 If DRAWER is non-nil, append inside that named drawer (created if needed)."
   (org-mcp-mutate--validate-body text)
+  (when drawer (org-mcp-mutate--validate-drawer-name drawer))
   (let ((location (org-mcp-query--find-entry id)))
     (with-current-buffer (find-file-noselect (car location))
       (org-with-wide-buffer

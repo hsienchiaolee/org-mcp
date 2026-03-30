@@ -236,6 +236,27 @@ Existing body.
       (let ((entry (org-mcp-query-get-entry (plist-get result :id))))
         (should (string-match-p "Some body text here" (plist-get entry :body)))))))
 
+(ert-deftest org-mcp-mutate-validate-drawer-name ()
+  "Drawer name must be alphanumeric, no newlines or reserved names."
+  (org-mcp-test-with-temp-org
+      "* TODO Task
+:PROPERTIES:
+:ID: mut-val-drawer
+:END:
+"
+    (dolist (case '(("RESULTS"                success)
+                    ("LOGBOOK"                success)
+                    ("My-Drawer_1"            success)
+                    ("END"                    error)
+                    ("PROPERTIES"             error)
+                    ("bad\nname"              error)
+                    (":colon:"                error)
+                    (""                       error)))
+      (if (eq (nth 1 case) 'error)
+          (should-error (org-mcp-mutate-append-body "mut-val-drawer" "text" (nth 0 case))
+                        :type 'org-mcp-invalid-input)
+        (org-mcp-mutate-append-body "mut-val-drawer" "text" (nth 0 case))))))
+
 (ert-deftest org-mcp-mutate-capture-validates-state ()
   "Capture rejects state containing newlines."
   (org-mcp-test-with-temp-org
