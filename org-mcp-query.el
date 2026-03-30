@@ -250,6 +250,7 @@ When INHERITED is non-nil, include properties inherited from ancestors."
 (defun org-mcp-query-get-config (&optional file)
   "Return TODO keywords and tags for FILE (or first agenda file)."
   (let ((f (or file (car (org-agenda-files)))))
+    (org-mcp-check-access f)
     (with-current-buffer (find-file-noselect f)
       (let* ((collected (org-collect-keywords '("TODO" "SEQ_TODO" "TYP_TODO" "TAGS")))
              (todo-lines (mapcar #'cadr (seq-filter (lambda (e) (member (car e) '("TODO" "SEQ_TODO" "TYP_TODO"))) collected)))

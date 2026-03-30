@@ -116,6 +116,22 @@
                         :type 'org-mcp-access-denied)
         (delete-directory other-dir)))))
 
+(ert-deftest org-mcp-access-get-config-denied ()
+  "org-mcp-query-get-config signals access-denied for files outside allowed dirs."
+  (org-mcp-test-with-temp-org "* Test\n"
+    (let* ((other-dir (make-temp-file "org-mcp-sec-other-" t))
+           (other-file (expand-file-name "other.org" other-dir))
+           (org-mcp-allowed-directories (list (file-name-directory (car org-agenda-files)))))
+      (unwind-protect
+          (progn
+            (write-region "* Task\n" nil other-file)
+            (should-error (org-mcp-query-get-config other-file)
+                          :type 'org-mcp-access-denied))
+        (when (get-file-buffer other-file)
+          (kill-buffer (get-file-buffer other-file)))
+        (delete-file other-file)
+        (delete-directory other-dir)))))
+
 (ert-deftest org-mcp-access-capture-file-denied ()
   "org-mcp-mutate-capture signals access-denied when target file is disallowed."
   (org-mcp-test-with-temp-org "* Existing\n"
