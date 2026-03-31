@@ -164,16 +164,16 @@ HEADLINE is always required."
              (insert "\n" (make-string (1+ parent-level) ?*) " "
                      (if state (concat state " ") "")
                      headline "\n")
-             (org-mcp-mutate--finalize-capture state properties body)))))
+             (org-mcp-mutate--finalize-capture properties body)))))
     (with-current-buffer (find-file-noselect file)
       (org-with-wide-buffer
        (goto-char (point-max))
        (insert (if (bolp) "" "\n") "* "
                (if state (concat state " ") "")
                headline "\n")
-       (org-mcp-mutate--finalize-capture state properties body)))))
+       (org-mcp-mutate--finalize-capture properties body)))))
 
-(defun org-mcp-mutate--finalize-capture (_state properties body)
+(defun org-mcp-mutate--finalize-capture (properties body)
   "Finalize a captured entry at point: assign ID, set PROPERTIES, insert BODY."
   (let ((new-id (org-id-get-create)))
     (when properties
