@@ -62,5 +62,25 @@
         (should (plist-get tool :description))
         (should (plist-get tool :inputSchema))))))
 
+(ert-deftest org-mcp-safe-read-query-rejects-reader-macro ()
+  "Query with #. reader macro is rejected as invalid input."
+  (let ((org-mcp--initialized t))
+    (org-mcp-test-with-temp-org "* TODO Task\n"
+      (let* ((response (org-mcp--handle-tools-call
+                        1 '(:name "org_query"
+                            :arguments (:query "#.(error \"pwned\")")))))
+        (should (plist-get response :error))
+        (should (= (plist-get (plist-get response :error) :code) -32602))))))
+
+(ert-deftest org-mcp-safe-read-query-rejects-vector ()
+  "Query containing vector syntax is rejected."
+  (let ((org-mcp--initialized t))
+    (org-mcp-test-with-temp-org "* TODO Task\n"
+      (let* ((response (org-mcp--handle-tools-call
+                        1 '(:name "org_query"
+                            :arguments (:query "[1 2 3]")))))
+        (should (plist-get response :error))
+        (should (= (plist-get (plist-get response :error) :code) -32602))))))
+
 (provide 'org-mcp-server-test)
 ;;; org-mcp-server-test.el ends here

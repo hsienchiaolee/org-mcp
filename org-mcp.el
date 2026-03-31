@@ -139,6 +139,35 @@
          :error (:code ,org-mcp-rpc-error-internal
                  :message ,(error-message-string err)))))))
 
+(defconst org-mcp--safe-query-symbols
+  '(and or not todo tags priority property headline scheduled deadline)
+  "Symbols allowed in query s-expressions.")
+
+(defun org-mcp--safe-read-query (string)
+  "Read STRING as a query s-expression, rejecting unsafe forms.
+Only allows lists, strings, numbers, and known query symbols."
+  (let ((form (condition-case nil
+                  (car (read-from-string string))
+                (error (signal 'org-mcp-invalid-input
+                               (list "Malformed query s-expression"))))))
+    (org-mcp--validate-query-form form)
+    form))
+
+(defun org-mcp--validate-query-form (form)
+  "Signal `org-mcp-invalid-input' if FORM contains unsafe elements."
+  (cond
+   ((stringp form) t)
+   ((numberp form) t)
+   ((and (symbolp form)
+         (memq form org-mcp--safe-query-symbols)) t)
+   ((symbolp form)
+    (signal 'org-mcp-invalid-input
+            (list (format "Unknown symbol in query: %S" form))))
+   ((listp form)
+    (dolist (elem form) (org-mcp--validate-query-form elem)))
+   (t (signal 'org-mcp-invalid-input
+              (list (format "Unsupported form in query: %S" form))))))
+
 (defun org-mcp--call-tool (name args)
   "Call tool NAME with ARGS plist. Return result plist."
   (org-mcp-log name args)
@@ -147,7 +176,7 @@
      (org-mcp-query-get-entry (plist-get args :id)))
     ("org_query"
      (org-mcp-query-query
-      (read (plist-get args :query))
+      (org-mcp--safe-read-query (plist-get args :query))
       (plist-get args :files)
       (plist-get args :columns)))
     ("org_get_children"
