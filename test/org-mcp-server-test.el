@@ -62,6 +62,16 @@
         (should (plist-get tool :description))
         (should (plist-get tool :inputSchema))))))
 
+(ert-deftest org-mcp-dispatch-capture-missing-headline-returns-invalid-params ()
+  "Capture without headline returns -32602, not -32603."
+  (let ((org-mcp--initialized t))
+    (org-mcp-test-with-temp-org "* Test\n"
+      (let* ((response (org-mcp--handle-tools-call
+                        1 `(:name "org_capture"
+                            :arguments (:file ,temp-file :headline nil))))
+             (err (plist-get response :error)))
+        (should (= (plist-get err :code) -32602))))))
+
 (ert-deftest org-mcp-dispatch-internal-error-hides-details ()
   "Internal errors return generic message, not raw Emacs error strings."
   (let ((org-mcp--initialized t))

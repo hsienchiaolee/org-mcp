@@ -142,16 +142,16 @@ If PARENT (org-id) is given, file under it.
 If only FILE is given, append as top-level entry.
 HEADLINE is always required."
   (when template-key
-    (error "Template-based capture not yet implemented"))
+    (signal 'org-mcp-invalid-input (list "Template-based capture not yet implemented")))
   (unless headline
-    (error "Headline is required"))
+    (signal 'org-mcp-invalid-input (list "Headline is required")))
   (org-mcp-mutate--validate-headline headline)
   (when (and state (string-match-p "\n" state))
     (signal 'org-mcp-invalid-input (list "State must not contain newlines")))
   (when body
     (org-mcp-mutate--validate-body body))
   (unless (or parent file)
-    (error "Either parent or file is required"))
+    (signal 'org-mcp-invalid-input (list "Either parent or file is required")))
   (when file
     (org-mcp-check-access file))
   (if parent
