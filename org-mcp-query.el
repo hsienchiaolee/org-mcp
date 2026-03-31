@@ -29,16 +29,18 @@
   (let ((tags (org-get-tags nil t)))
     (when tags (mapcar #'substring-no-properties tags))))
 
+(defconst org-mcp-query--excluded-properties
+  '("CATEGORY" "FILE" "BLOCKED" "ITEM" "PRIORITY" "TODO" "TAGS" "ALLTAGS"
+    "CLOCKSUM" "CLOSED" "DEADLINE" "SCHEDULED" "TIMESTAMP" "TIMESTAMP_IA")
+  "Standard Org properties excluded from property results.")
+
 (defun org-mcp-query--get-properties ()
   "Get property drawer as a plist for entry at point.
 Excludes standard Org properties (ID, CATEGORY, etc.)."
   (let* ((all-props (org-entry-properties nil 'standard))
          (result nil))
     (dolist (pair all-props)
-      (unless (member (car pair) '("CATEGORY" "FILE" "BLOCKED" "ITEM"
-                                    "PRIORITY" "TODO" "TAGS" "ALLTAGS"
-                                    "CLOCKSUM" "CLOSED" "DEADLINE" "SCHEDULED"
-                                    "TIMESTAMP" "TIMESTAMP_IA"))
+      (unless (member (car pair) org-mcp-query--excluded-properties)
         (setq result (plist-put result (intern (concat ":" (car pair))) (cdr pair)))))
     result))
 
@@ -231,10 +233,7 @@ When INHERITED is non-nil, include properties inherited from ancestors."
            ;; Fetch each key with inheritance, filtering standard props
            (let ((result nil))
              (dolist (key keys)
-               (unless (member key '("CATEGORY" "FILE" "BLOCKED" "ITEM"
-                                     "PRIORITY" "TODO" "TAGS" "ALLTAGS"
-                                     "CLOCKSUM" "CLOSED" "DEADLINE" "SCHEDULED"
-                                     "TIMESTAMP" "TIMESTAMP_IA"))
+               (unless (member key org-mcp-query--excluded-properties)
                  (let ((val (org-entry-get nil key t)))
                    (when val
                      (setq result (plist-put result (intern (concat ":" key)) val))))))
