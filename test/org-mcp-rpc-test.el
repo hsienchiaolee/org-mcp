@@ -26,20 +26,18 @@
   (should-error (org-mcp-rpc-parse "{\"id\":1,\"method\":\"foo\"}") :type 'org-mcp-rpc-invalid-request))
 
 (ert-deftest org-mcp-rpc-format-result ()
-  "Format a success response."
-  (let* ((json-str (org-mcp-rpc-format-result 1 '(:count 2)))
-         (parsed (org-mcp-test-parse-json json-str)))
-    (should (equal (plist-get parsed :jsonrpc) "2.0"))
-    (should (equal (plist-get parsed :id) 1))
-    (should (equal (plist-get (plist-get parsed :result) :count) 2))))
+  "Build a success response plist."
+  (let ((response (org-mcp-rpc-format-result 1 '(:count 2))))
+    (should (equal (plist-get response :jsonrpc) "2.0"))
+    (should (equal (plist-get response :id) 1))
+    (should (equal (plist-get (plist-get response :result) :count) 2))))
 
 (ert-deftest org-mcp-rpc-format-error ()
-  "Format an error response."
-  (let* ((json-str (org-mcp-rpc-format-error 1 -32602 "Entry not found" '(:id "missing")))
-         (parsed (org-mcp-test-parse-json json-str)))
-    (should (equal (plist-get parsed :id) 1))
-    (should (equal (plist-get (plist-get parsed :error) :code) -32602))
-    (should (equal (plist-get (plist-get parsed :error) :message) "Entry not found"))))
+  "Build an error response plist."
+  (let ((response (org-mcp-rpc-format-error 1 -32602 "Entry not found" '(:id "missing"))))
+    (should (equal (plist-get response :id) 1))
+    (should (equal (plist-get (plist-get response :error) :code) -32602))
+    (should (equal (plist-get (plist-get response :error) :message) "Entry not found"))))
 
 (ert-deftest org-mcp-rpc-format-notification ()
   "Format a server notification."

@@ -99,45 +99,38 @@
 (defun org-mcp--handle-initialize (id _params)
   "Handle the initialize handshake. Return response plist."
   (setq org-mcp--initialized t)
-  `(:jsonrpc "2.0" :id ,id
-    :result (:protocolVersion "2025-03-26"
-             :capabilities (:tools (:__placeholder t))
-             :serverInfo (:name "org-mcp" :version ,org-mcp--version))))
+  (org-mcp-rpc-format-result
+   id '(:protocolVersion "2025-03-26"
+        :capabilities (:tools (:__placeholder t))
+        :serverInfo (:name "org-mcp" :version "0.1.0"))))
 
 (defun org-mcp--handle-tools-list (id)
   "Handle tools/list. Return list of available tools."
-  `(:jsonrpc "2.0" :id ,id
-    :result (:tools ,org-mcp--tool-definitions)))
+  (org-mcp-rpc-format-result id `(:tools ,org-mcp--tool-definitions)))
 
 (defun org-mcp--handle-tools-call (id params)
   "Handle tools/call. Dispatch to the appropriate handler."
   (let ((name (plist-get params :name))
         (args (plist-get params :arguments)))
     (condition-case err
-        (let ((result (org-mcp--call-tool name args)))
-          `(:jsonrpc "2.0" :id ,id :result ,result))
+        (org-mcp-rpc-format-result id (org-mcp--call-tool name args))
       (org-mcp-invalid-input
-       `(:jsonrpc "2.0" :id ,id
-         :error (:code ,org-mcp-rpc-error-invalid-params
-                 :message ,(cadr err))))
+       (org-mcp-rpc-format-error id org-mcp-rpc-error-invalid-params
+                                 (cadr err)))
       (org-mcp-access-denied
-       `(:jsonrpc "2.0" :id ,id
-         :error (:code ,org-mcp-rpc-error-invalid-params
-                 :message "File not in allowed directories"
-                 :data (:file ,(cadr err)))))
+       (org-mcp-rpc-format-error id org-mcp-rpc-error-invalid-params
+                                 "File not in allowed directories"
+                                 `(:file ,(cadr err))))
       (org-mcp-entry-not-found
-       `(:jsonrpc "2.0" :id ,id
-         :error (:code ,org-mcp-rpc-error-invalid-params
-                 :message "Entry not found"
-                 :data (:id ,(cadr err)))))
+       (org-mcp-rpc-format-error id org-mcp-rpc-error-invalid-params
+                                 "Entry not found"
+                                 `(:id ,(cadr err))))
       (org-mcp-method-not-found
-       `(:jsonrpc "2.0" :id ,id
-         :error (:code ,org-mcp-rpc-error-method-not-found
-                 :message ,(format "Unknown tool: %s" (cadr err)))))
+       (org-mcp-rpc-format-error id org-mcp-rpc-error-method-not-found
+                                 (format "Unknown tool: %s" (cadr err))))
       (error
-       `(:jsonrpc "2.0" :id ,id
-         :error (:code ,org-mcp-rpc-error-internal
-                 :message "Internal error"))))))
+       (org-mcp-rpc-format-error id org-mcp-rpc-error-internal
+                                 "Internal error")))))
 
 (defconst org-mcp--safe-query-symbols
   '(and or not todo tags priority property headline scheduled deadline)
@@ -228,18 +221,16 @@ Only allows lists, strings, numbers, and known query symbols."
        nil)
       (_
        (if (not org-mcp--initialized)
-           `(:jsonrpc "2.0" :id ,id
-             :error (:code ,org-mcp-rpc-error-invalid-request
-                     :message "Server not initialized"))
+           (org-mcp-rpc-format-error id org-mcp-rpc-error-invalid-request
+                                     "Server not initialized")
          (pcase method
            ("tools/list"
             (org-mcp--handle-tools-list id))
            ("tools/call"
             (org-mcp--handle-tools-call id params))
            (_
-            `(:jsonrpc "2.0" :id ,id
-              :error (:code ,org-mcp-rpc-error-method-not-found
-                      :message ,(format "Unknown method: %s" method))))))))))
+            (org-mcp-rpc-format-error id org-mcp-rpc-error-method-not-found
+                                      (format "Unknown method: %s" method)))))))))
 
 (defun org-mcp-start ()
   "Start the MCP server stdio loop.
@@ -259,12 +250,14 @@ Reads newline-delimited JSON-RPC from stdin, dispatches, and writes responses."
                     (org-mcp-rpc-send (json-serialize response))))
               (org-mcp-rpc-parse-error
                (org-mcp-rpc-send
-                (org-mcp-rpc-format-error nil org-mcp-rpc-error-parse
-                                          "Parse error" nil)))
+                (json-serialize
+                 (org-mcp-rpc-format-error nil org-mcp-rpc-error-parse
+                                           "Parse error" nil))))
               (org-mcp-rpc-invalid-request
                (org-mcp-rpc-send
-                (org-mcp-rpc-format-error nil org-mcp-rpc-error-invalid-request
-                                          "Invalid request" nil)))))))
+                (json-serialize
+                 (org-mcp-rpc-format-error nil org-mcp-rpc-error-invalid-request
+                                           "Invalid request" nil))))))))
     (end-of-file
      (org-mcp-notify-disable))))
 

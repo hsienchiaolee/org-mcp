@@ -35,17 +35,17 @@ Signal `org-mcp-rpc-invalid-request' if jsonrpc field is missing or wrong."
     msg))
 
 (defun org-mcp-rpc-format-result (id result)
-  "Format a JSON-RPC 2.0 success response for ID with RESULT plist."
-  (json-serialize `(:jsonrpc "2.0" :id ,id :result ,result)))
+  "Build a JSON-RPC 2.0 success response plist for ID with RESULT."
+  `(:jsonrpc "2.0" :id ,id :result ,result))
 
 (defun org-mcp-rpc-format-error (id code message &optional data)
-  "Format a JSON-RPC 2.0 error response for ID.
+  "Build a JSON-RPC 2.0 error response plist for ID.
 CODE is an integer error code, MESSAGE a string.
 DATA is an optional plist with additional info."
   (let ((err `(:code ,code :message ,message)))
     (when data
       (setq err (plist-put err :data data)))
-    (json-serialize `(:jsonrpc "2.0" :id ,id :error ,err))))
+    `(:jsonrpc "2.0" :id ,id :error ,err)))
 
 (defun org-mcp-rpc-format-notification (method params)
   "Format a JSON-RPC 2.0 notification (no id) with METHOD and PARAMS."

@@ -62,6 +62,35 @@
         (should (plist-get tool :description))
         (should (plist-get tool :inputSchema))))))
 
+(ert-deftest org-mcp-dispatch-serializes-valid-jsonrpc ()
+  "Dispatch returns plists that serialize to valid JSON-RPC 2.0."
+  (let ((org-mcp--initialized t))
+    (org-mcp-test-with-temp-org
+        "* TODO Task
+:PROPERTIES:
+:ID: serial-1
+:END:
+"
+      ;; Success response
+      (let* ((response (org-mcp--dispatch
+                        '(:jsonrpc "2.0" :id 1 :method "tools/call"
+                          :params (:name "org_get_entry" :arguments (:id "serial-1")))))
+             (json-str (json-serialize response))
+             (parsed (org-mcp-test-parse-json json-str)))
+        (should (equal (plist-get parsed :jsonrpc) "2.0"))
+        (should (equal (plist-get parsed :id) 1))
+        (should (plist-get parsed :result)))
+      ;; Error response
+      (let* ((response (org-mcp--dispatch
+                        '(:jsonrpc "2.0" :id 2 :method "tools/call"
+                          :params (:name "org_get_entry" :arguments (:id "missing")))))
+             (json-str (json-serialize response))
+             (parsed (org-mcp-test-parse-json json-str)))
+        (should (equal (plist-get parsed :jsonrpc) "2.0"))
+        (should (equal (plist-get parsed :id) 2))
+        (should (plist-get parsed :error))
+        (should (numberp (plist-get (plist-get parsed :error) :code)))))))
+
 (ert-deftest org-mcp-dispatch-capture-missing-headline-returns-invalid-params ()
   "Capture without headline returns -32602, not -32603."
   (let ((org-mcp--initialized t))
