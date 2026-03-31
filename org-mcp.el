@@ -137,7 +137,7 @@
       (error
        `(:jsonrpc "2.0" :id ,id
          :error (:code ,org-mcp-rpc-error-internal
-                 :message ,(error-message-string err)))))))
+                 :message "Internal error"))))))
 
 (defconst org-mcp--safe-query-symbols
   '(and or not todo tags priority property headline scheduled deadline)

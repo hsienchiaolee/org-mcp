@@ -62,6 +62,18 @@
         (should (plist-get tool :description))
         (should (plist-get tool :inputSchema))))))
 
+(ert-deftest org-mcp-dispatch-internal-error-hides-details ()
+  "Internal errors return generic message, not raw Emacs error strings."
+  (let ((org-mcp--initialized t))
+    (cl-letf (((symbol-function 'org-mcp-query-get-entry)
+               (lambda (_id) (error "File not found: /secret/path/file.org"))))
+      (let* ((response (org-mcp--handle-tools-call
+                        1 '(:name "org_get_entry" :arguments (:id "x"))))
+             (err (plist-get response :error)))
+        (should (= (plist-get err :code) -32603))
+        (should (equal (plist-get err :message) "Internal error"))
+        (should-not (string-match-p "secret" (plist-get err :message)))))))
+
 (ert-deftest org-mcp-safe-read-query-rejects-reader-macro ()
   "Query with #. reader macro is rejected as invalid input."
   (let ((org-mcp--initialized t))
