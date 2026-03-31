@@ -259,5 +259,11 @@ Actual body content.
         (should (member "feature" (append tags nil)))
         (should (member "docs" (append tags nil)))))))
 
+(ert-deftest org-mcp-query-get-config-no-file-no-agenda ()
+  "get_config with no file and empty agenda signals an error."
+  (let ((org-agenda-files nil))
+    (should-error (org-mcp-query-get-config)
+                  :type 'org-mcp-invalid-input)))
+
 (provide 'org-mcp-query-test)
 ;;; org-mcp-query-test.el ends here
