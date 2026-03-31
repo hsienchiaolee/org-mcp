@@ -56,13 +56,6 @@ DATA is an optional plist with additional info."
   (princ string)
   (princ "\n"))
 
-(defun org-mcp-rpc-request-p (msg)
-  "Return non-nil if MSG is a request (has an id)."
-  (plist-member msg :id))
-
-(defun org-mcp-rpc-notification-p (msg)
-  "Return non-nil if MSG is a notification (no id)."
-  (not (plist-member msg :id)))
 
 (provide 'org-mcp-rpc)
 ;;; org-mcp-rpc.el ends here
