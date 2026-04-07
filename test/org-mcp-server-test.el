@@ -184,5 +184,25 @@
           (should (member dir org-mcp--client-roots)))
       (delete-directory dir))))
 
+(ert-deftest org-mcp-dispatch-initialize-resets-state ()
+  "Re-initializing replaces previous roots."
+  (let* ((old-dir (make-temp-file "org-mcp-old-" t))
+         (new-dir (make-temp-file "org-mcp-new-" t))
+         (org-mcp--client-roots (list old-dir))
+         (org-mcp--resolved-allowed-dirs (list old-dir))
+         (org-mcp-allowed-directories nil)
+         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                   :params (:protocolVersion "2025-03-26"
+                            :capabilities (:__placeholder t)
+                            :clientInfo (:name "test" :version "1.0")
+                            :roots [(:uri ,(concat "file://" new-dir))]))))
+    (unwind-protect
+        (progn
+          (org-mcp--dispatch request)
+          (should-not (member old-dir org-mcp--client-roots))
+          (should (member new-dir org-mcp--client-roots)))
+      (delete-directory old-dir)
+      (delete-directory new-dir))))
+
 (provide 'org-mcp-server-test)
 ;;; org-mcp-server-test.el ends here
