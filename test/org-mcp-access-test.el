@@ -186,5 +186,10 @@
   (should (null (org-mcp-access--parse-file-uri nil)))
   (should (null (org-mcp-access--parse-file-uri ""))))
 
+(ert-deftest org-mcp-access-parse-file-uri-percent-literal ()
+  "Decodes %25 to a literal percent sign without double-decoding."
+  (should (equal (org-mcp-access--parse-file-uri "file:///path/100%25done.org")
+                 "/path/100%done.org")))
+
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here

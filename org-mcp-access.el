@@ -8,6 +8,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'url-util)
 
 (defcustom org-mcp-allowed-directories nil
   "List of directory prefixes that org-mcp tools may access.
@@ -17,19 +18,10 @@ When nil, defaults to the directories containing `org-agenda-files'."
 
 (define-error 'org-mcp-access-denied "File not in allowed directories")
 
-(defun org-mcp-access--decode-percent (str)
-  "Decode percent-encoded characters in STR."
-  (let ((result str))
-    (while (string-match "%\\([0-9A-Fa-f]\\{2\\}\\)" result)
-      (setq result (replace-match
-                    (string (string-to-number (match-string 1 result) 16))
-                    t t result)))
-    result))
-
 (defun org-mcp-access--parse-file-uri (uri)
   "Convert a file:// URI to a local path. Return nil for non-file URIs."
   (when (and uri (stringp uri) (string-prefix-p "file:///" uri))
-    (org-mcp-access--decode-percent (substring uri 7))))
+    (url-unhex-string (substring uri 7))))
 
 (defun org-mcp-check-access (file-path)
   "Signal `org-mcp-access-denied' if FILE-PATH is not under an allowed directory.
