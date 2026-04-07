@@ -191,5 +191,39 @@
   (should (equal (org-mcp-access--parse-file-uri "file:///path/100%25done.org")
                  "/path/100%done.org")))
 
+;;; Directory resolution
+
+(ert-deftest org-mcp-access-resolve-with-roots-only ()
+  "Client roots are included in resolved directories."
+  (let* ((dir (make-temp-file "org-mcp-roots-" t))
+         (org-mcp--client-roots (list dir))
+         (org-mcp-allowed-directories nil))
+    (unwind-protect
+        (let ((resolved (org-mcp-access-resolve-directories)))
+          (should (member dir resolved)))
+      (delete-directory dir))))
+
+(ert-deftest org-mcp-access-resolve-union ()
+  "Resolved directories are the union of client roots and allowed dirs."
+  (let* ((root-dir (make-temp-file "org-mcp-root-" t))
+         (allowed-dir (make-temp-file "org-mcp-allowed-" t))
+         (org-mcp--client-roots (list root-dir))
+         (org-mcp-allowed-directories (list allowed-dir)))
+    (unwind-protect
+        (let ((resolved (org-mcp-access-resolve-directories)))
+          (should (member root-dir resolved))
+          (should (member allowed-dir resolved)))
+      (delete-directory root-dir)
+      (delete-directory allowed-dir))))
+
+(ert-deftest org-mcp-access-resolve-fallback-to-agenda ()
+  "When both roots and allowed-dirs are nil, falls back to agenda-file dirs."
+  (org-mcp-test-with-temp-org "* Test\n"
+    (let ((org-mcp--client-roots nil)
+          (org-mcp-allowed-directories nil))
+      (let ((resolved (org-mcp-access-resolve-directories)))
+        (should (member (file-name-directory (file-truename (car org-agenda-files)))
+                        resolved))))))
+
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here
