@@ -250,5 +250,63 @@
           (org-mcp-allowed-directories nil))
       (should (org-mcp-check-access (car org-agenda-files))))))
 
+;;; Integration: roots-based access
+
+(ert-deftest org-mcp-access-roots-grants-project-access ()
+  "Files under a client root are accessible after initialize."
+  (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
+         (org-file (expand-file-name "tasks.org" project-dir))
+         (org-mcp--initialized nil)
+         (org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (org-mcp-allowed-directories nil))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Task\n:PROPERTIES:\n:ID: roots-e2e-1\n:END:\n"
+                        nil org-file)
+          (find-file-noselect org-file)
+          (let ((org-agenda-files (list org-file)))
+            (org-mcp--dispatch
+             `(:jsonrpc "2.0" :id 1 :method "initialize"
+               :params (:protocolVersion "2025-03-26"
+                        :capabilities (:__placeholder t)
+                        :clientInfo (:name "test" :version "1.0")
+                        :roots [(:uri ,(concat "file://" project-dir))])))
+            (should (org-mcp-check-access org-file))
+            (let* ((response (org-mcp--dispatch
+                              '(:jsonrpc "2.0" :id 2 :method "tools/call"
+                                :params (:name "org_get_entry"
+                                         :arguments (:id "roots-e2e-1")))))
+                   (result (plist-get response :result)))
+              (should result)
+              (should (equal (plist-get result :id) "roots-e2e-1")))))
+      (when (get-file-buffer org-file)
+        (kill-buffer (get-file-buffer org-file)))
+      (delete-directory project-dir t))))
+
+(ert-deftest org-mcp-access-roots-denies-outside-project ()
+  "Files outside client roots are denied after initialize."
+  (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
+         (other-dir (file-truename (make-temp-file "org-mcp-other-" t)))
+         (other-file (expand-file-name "secret.org" other-dir))
+         (org-mcp--initialized nil)
+         (org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (org-mcp-allowed-directories nil))
+    (unwind-protect
+        (progn
+          (write-region "" nil other-file)
+          (org-mcp--dispatch
+           `(:jsonrpc "2.0" :id 1 :method "initialize"
+             :params (:protocolVersion "2025-03-26"
+                      :capabilities (:__placeholder t)
+                      :clientInfo (:name "test" :version "1.0")
+                      :roots [(:uri ,(concat "file://" project-dir))])))
+          (should-error (org-mcp-check-access other-file)
+                        :type 'org-mcp-access-denied))
+      (delete-file other-file)
+      (delete-directory other-dir)
+      (delete-directory project-dir))))
+
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here
