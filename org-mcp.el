@@ -244,9 +244,6 @@ Only allows lists, strings, numbers, and known query symbols."
   "Start the MCP server stdio loop.
 Reads newline-delimited JSON-RPC from stdin, dispatches, and writes responses."
   (org-mcp-notify-enable)
-  (setq org-mcp--initialized nil
-        org-mcp--client-roots nil
-        org-mcp--resolved-allowed-dirs nil)
   (condition-case _err
       (while t
         (let ((line (condition-case nil
