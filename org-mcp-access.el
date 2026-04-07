@@ -46,7 +46,8 @@ Logs to stderr when falling back."
   "Signal `org-mcp-access-denied' if FILE-PATH is not under an allowed directory.
 Returns t if access is permitted."
   (let* ((real-path (file-truename file-path))
-         (allowed (or org-mcp-allowed-directories
+         (allowed (or org-mcp--resolved-allowed-dirs
+                      org-mcp-allowed-directories
                       (mapcar (lambda (f) (file-name-directory (file-truename f)))
                               (org-agenda-files)))))
     (unless (seq-some (lambda (dir)

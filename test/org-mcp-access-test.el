@@ -197,7 +197,8 @@
   "Client roots are included in resolved directories."
   (let* ((dir (make-temp-file "org-mcp-roots-" t))
          (org-mcp--client-roots (list dir))
-         (org-mcp-allowed-directories nil))
+         (org-mcp-allowed-directories nil)
+         (org-mcp--resolved-allowed-dirs nil))
     (unwind-protect
         (let ((resolved (org-mcp-access-resolve-directories)))
           (should (member dir resolved)))
@@ -208,7 +209,8 @@
   (let* ((root-dir (make-temp-file "org-mcp-root-" t))
          (allowed-dir (make-temp-file "org-mcp-allowed-" t))
          (org-mcp--client-roots (list root-dir))
-         (org-mcp-allowed-directories (list allowed-dir)))
+         (org-mcp-allowed-directories (list allowed-dir))
+         (org-mcp--resolved-allowed-dirs nil))
     (unwind-protect
         (let ((resolved (org-mcp-access-resolve-directories)))
           (should (member root-dir resolved))
@@ -220,10 +222,33 @@
   "When both roots and allowed-dirs are nil, falls back to agenda-file dirs."
   (org-mcp-test-with-temp-org "* Test\n"
     (let ((org-mcp--client-roots nil)
-          (org-mcp-allowed-directories nil))
+          (org-mcp-allowed-directories nil)
+          (org-mcp--resolved-allowed-dirs nil))
       (let ((resolved (org-mcp-access-resolve-directories)))
         (should (member (file-name-directory (file-truename (car org-agenda-files)))
                         resolved))))))
+
+;;; check-access uses resolved dirs
+
+(ert-deftest org-mcp-access-check-uses-resolved-dirs ()
+  "org-mcp-check-access uses org-mcp--resolved-allowed-dirs when set."
+  (let* ((dir (make-temp-file "org-mcp-resolved-" t))
+         (file (expand-file-name "test.org" dir))
+         (org-mcp--resolved-allowed-dirs (list dir))
+         (org-mcp-allowed-directories nil))
+    (unwind-protect
+        (progn
+          (write-region "" nil file)
+          (should (org-mcp-check-access file)))
+      (delete-file file)
+      (delete-directory dir))))
+
+(ert-deftest org-mcp-access-check-falls-back-without-resolved ()
+  "org-mcp-check-access falls back to agenda dirs when resolved is nil."
+  (org-mcp-test-with-temp-org "* Test\n"
+    (let ((org-mcp--resolved-allowed-dirs nil)
+          (org-mcp-allowed-directories nil))
+      (should (org-mcp-check-access (car org-agenda-files))))))
 
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here
