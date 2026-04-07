@@ -164,5 +164,27 @@
         (delete-file other-file)
         (delete-directory other-dir)))))
 
+;;; URI parsing
+
+(ert-deftest org-mcp-access-parse-file-uri-basic ()
+  "Parses a standard file:// URI to a local path."
+  (should (equal (org-mcp-access--parse-file-uri "file:///home/user/project")
+                 "/home/user/project")))
+
+(ert-deftest org-mcp-access-parse-file-uri-percent-encoding ()
+  "Decodes percent-encoded characters in file URIs."
+  (should (equal (org-mcp-access--parse-file-uri "file:///path/to/my%20project")
+                 "/path/to/my project")))
+
+(ert-deftest org-mcp-access-parse-file-uri-non-file ()
+  "Returns nil for non-file:// URIs."
+  (should (null (org-mcp-access--parse-file-uri "https://example.com")))
+  (should (null (org-mcp-access--parse-file-uri "ssh://host/path"))))
+
+(ert-deftest org-mcp-access-parse-file-uri-empty ()
+  "Returns nil for nil or empty input."
+  (should (null (org-mcp-access--parse-file-uri nil)))
+  (should (null (org-mcp-access--parse-file-uri ""))))
+
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here
