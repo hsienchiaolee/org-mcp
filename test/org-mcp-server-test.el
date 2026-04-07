@@ -17,7 +17,7 @@
 
 (ert-deftest org-mcp-dispatch-before-init ()
   "Requests before initialization are rejected."
-  (let ((org-mcp--initialized nil))
+  (org-mcp-test-with-clean-session
     (let* ((request '(:jsonrpc "2.0" :id 1 :method "tools/call"
                       :params (:name "org_get_entry" :arguments (:id "x"))))
            (response (org-mcp--dispatch request)))
@@ -135,74 +135,72 @@
 
 (ert-deftest org-mcp-dispatch-initialize-with-roots ()
   "Initialize extracts roots and resolves allowed directories."
-  (let* ((dir (make-temp-file "org-mcp-init-root-" t))
-         (uri (concat "file://" dir))
-         (org-mcp--client-roots nil)
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories nil)
-         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
-                   :params (:protocolVersion "2025-03-26"
-                            :capabilities (:__placeholder t)
-                            :clientInfo (:name "test" :version "1.0")
-                            :roots [(:uri ,uri)]))))
-    (unwind-protect
-        (progn
-          (org-mcp--dispatch request)
-          (should (member dir org-mcp--client-roots))
-          (should (member dir org-mcp--resolved-allowed-dirs)))
-      (delete-directory dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((dir (make-temp-file "org-mcp-init-root-" t))
+           (uri (concat "file://" dir))
+           (org-mcp-allowed-directories nil)
+           (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                     :params (:protocolVersion "2025-03-26"
+                              :capabilities (:__placeholder t)
+                              :clientInfo (:name "test" :version "1.0")
+                              :roots [(:uri ,uri)]))))
+      (unwind-protect
+          (progn
+            (org-mcp--dispatch request)
+            (should (member dir org-mcp--client-roots))
+            (should (member dir org-mcp--resolved-allowed-dirs)))
+        (delete-directory dir)))))
 
 (ert-deftest org-mcp-dispatch-initialize-without-roots ()
   "Initialize without roots falls back to existing behavior."
-  (let* ((org-mcp--client-roots nil)
-         (org-mcp--resolved-allowed-dirs nil)
-         (request '(:jsonrpc "2.0" :id 1 :method "initialize"
-                   :params (:protocolVersion "2025-03-26"
-                            :capabilities (:__placeholder t)
-                            :clientInfo (:name "test" :version "1.0")))))
-    (org-mcp-test-with-temp-org "* Test\n"
-      (org-mcp--dispatch request)
-      (should (null org-mcp--client-roots))
-      (should org-mcp--resolved-allowed-dirs))))
+  (org-mcp-test-with-clean-session
+    (let ((request '(:jsonrpc "2.0" :id 1 :method "initialize"
+                    :params (:protocolVersion "2025-03-26"
+                             :capabilities (:__placeholder t)
+                             :clientInfo (:name "test" :version "1.0")))))
+      (org-mcp-test-with-temp-org "* Test\n"
+        (org-mcp--dispatch request)
+        (should (null org-mcp--client-roots))
+        (should org-mcp--resolved-allowed-dirs)))))
 
 (ert-deftest org-mcp-dispatch-initialize-ignores-non-file-roots ()
   "Initialize ignores non-file:// URIs in roots."
-  (let* ((dir (make-temp-file "org-mcp-init-root-" t))
-         (org-mcp--client-roots nil)
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories nil)
-         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
-                   :params (:protocolVersion "2025-03-26"
-                            :capabilities (:__placeholder t)
-                            :clientInfo (:name "test" :version "1.0")
-                            :roots [(:uri "https://example.com")
-                                    (:uri ,(concat "file://" dir))]))))
-    (unwind-protect
-        (progn
-          (org-mcp--dispatch request)
-          (should (= (length org-mcp--client-roots) 1))
-          (should (member dir org-mcp--client-roots)))
-      (delete-directory dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((dir (make-temp-file "org-mcp-init-root-" t))
+           (org-mcp-allowed-directories nil)
+           (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                     :params (:protocolVersion "2025-03-26"
+                              :capabilities (:__placeholder t)
+                              :clientInfo (:name "test" :version "1.0")
+                              :roots [(:uri "https://example.com")
+                                      (:uri ,(concat "file://" dir))]))))
+      (unwind-protect
+          (progn
+            (org-mcp--dispatch request)
+            (should (= (length org-mcp--client-roots) 1))
+            (should (member dir org-mcp--client-roots)))
+        (delete-directory dir)))))
 
 (ert-deftest org-mcp-dispatch-initialize-resets-state ()
   "Re-initializing replaces previous roots."
-  (let* ((old-dir (make-temp-file "org-mcp-old-" t))
-         (new-dir (make-temp-file "org-mcp-new-" t))
-         (org-mcp--client-roots (list old-dir))
-         (org-mcp--resolved-allowed-dirs (list old-dir))
-         (org-mcp-allowed-directories nil)
-         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
-                   :params (:protocolVersion "2025-03-26"
-                            :capabilities (:__placeholder t)
-                            :clientInfo (:name "test" :version "1.0")
-                            :roots [(:uri ,(concat "file://" new-dir))]))))
-    (unwind-protect
-        (progn
-          (org-mcp--dispatch request)
-          (should-not (member old-dir org-mcp--client-roots))
-          (should (member new-dir org-mcp--client-roots)))
-      (delete-directory old-dir)
-      (delete-directory new-dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((old-dir (make-temp-file "org-mcp-old-" t))
+           (new-dir (make-temp-file "org-mcp-new-" t))
+           (org-mcp-allowed-directories nil)
+           (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                     :params (:protocolVersion "2025-03-26"
+                              :capabilities (:__placeholder t)
+                              :clientInfo (:name "test" :version "1.0")
+                              :roots [(:uri ,(concat "file://" new-dir))]))))
+      (setq org-mcp--client-roots (list old-dir))
+      (setq org-mcp--resolved-allowed-dirs (list old-dir))
+      (unwind-protect
+          (progn
+            (org-mcp--dispatch request)
+            (should-not (member old-dir org-mcp--client-roots))
+            (should (member new-dir org-mcp--client-roots)))
+        (delete-directory old-dir)
+        (delete-directory new-dir)))))
 
 (provide 'org-mcp-server-test)
 ;;; org-mcp-server-test.el ends here

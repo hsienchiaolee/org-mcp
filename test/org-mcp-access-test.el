@@ -9,32 +9,32 @@
 
 (ert-deftest org-mcp-access-allowed ()
   "File under an allowed directory passes access check."
-  (let* ((dir (make-temp-file "org-mcp-sec-allowed-" t))
-         (file (expand-file-name "test.org" dir))
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories (list dir)))
-    (unwind-protect
-        (progn
-          (write-region "" nil file)
-          (should (org-mcp-check-access file)))
-      (delete-file file)
-      (delete-directory dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((dir (make-temp-file "org-mcp-sec-allowed-" t))
+           (file (expand-file-name "test.org" dir))
+           (org-mcp-allowed-directories (list dir)))
+      (unwind-protect
+          (progn
+            (write-region "" nil file)
+            (should (org-mcp-check-access file)))
+        (delete-file file)
+        (delete-directory dir)))))
 
 (ert-deftest org-mcp-access-denied ()
   "File outside allowed directories signals org-mcp-access-denied."
-  (let* ((allowed-dir (make-temp-file "org-mcp-sec-allowed-" t))
-         (other-dir (make-temp-file "org-mcp-sec-other-" t))
-         (file (expand-file-name "test.org" other-dir))
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories (list allowed-dir)))
-    (unwind-protect
-        (progn
-          (write-region "" nil file)
-          (should-error (org-mcp-check-access file)
-                        :type 'org-mcp-access-denied))
-      (delete-file file)
-      (delete-directory other-dir)
-      (delete-directory allowed-dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((allowed-dir (make-temp-file "org-mcp-sec-allowed-" t))
+           (other-dir (make-temp-file "org-mcp-sec-other-" t))
+           (file (expand-file-name "test.org" other-dir))
+           (org-mcp-allowed-directories (list allowed-dir)))
+      (unwind-protect
+          (progn
+            (write-region "" nil file)
+            (should-error (org-mcp-check-access file)
+                          :type 'org-mcp-access-denied))
+        (delete-file file)
+        (delete-directory other-dir)
+        (delete-directory allowed-dir)))))
 
 (ert-deftest org-mcp-access-default-uses-agenda-dirs ()
   "When org-mcp-allowed-directories is nil, agenda file dirs are used."
@@ -197,118 +197,114 @@
 
 (ert-deftest org-mcp-access-resolve-with-roots-only ()
   "Client roots are included in resolved directories."
-  (let* ((dir (make-temp-file "org-mcp-roots-" t))
-         (org-mcp--client-roots (list dir))
-         (org-mcp-allowed-directories nil)
-         (org-mcp--resolved-allowed-dirs nil))
-    (unwind-protect
-        (let ((resolved (org-mcp-access-resolve-directories)))
-          (should (member dir resolved)))
-      (delete-directory dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((dir (make-temp-file "org-mcp-roots-" t))
+           (org-mcp-allowed-directories nil))
+      (setq org-mcp--client-roots (list dir))
+      (unwind-protect
+          (let ((resolved (org-mcp-access-resolve-directories)))
+            (should (member dir resolved)))
+        (delete-directory dir)))))
 
 (ert-deftest org-mcp-access-resolve-union ()
   "Resolved directories are the union of client roots and allowed dirs."
-  (let* ((root-dir (make-temp-file "org-mcp-root-" t))
-         (allowed-dir (make-temp-file "org-mcp-allowed-" t))
-         (org-mcp--client-roots (list root-dir))
-         (org-mcp-allowed-directories (list allowed-dir))
-         (org-mcp--resolved-allowed-dirs nil))
-    (unwind-protect
-        (let ((resolved (org-mcp-access-resolve-directories)))
-          (should (member root-dir resolved))
-          (should (member allowed-dir resolved)))
-      (delete-directory root-dir)
-      (delete-directory allowed-dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((root-dir (make-temp-file "org-mcp-root-" t))
+           (allowed-dir (make-temp-file "org-mcp-allowed-" t))
+           (org-mcp-allowed-directories (list allowed-dir)))
+      (setq org-mcp--client-roots (list root-dir))
+      (unwind-protect
+          (let ((resolved (org-mcp-access-resolve-directories)))
+            (should (member root-dir resolved))
+            (should (member allowed-dir resolved)))
+        (delete-directory root-dir)
+        (delete-directory allowed-dir)))))
 
 (ert-deftest org-mcp-access-resolve-fallback-to-agenda ()
   "When both roots and allowed-dirs are nil, falls back to agenda-file dirs."
-  (org-mcp-test-with-temp-org "* Test\n"
-    (let ((org-mcp--client-roots nil)
-          (org-mcp-allowed-directories nil)
-          (org-mcp--resolved-allowed-dirs nil))
-      (let ((resolved (org-mcp-access-resolve-directories)))
-        (should (member (file-name-directory (file-truename (car org-agenda-files)))
-                        resolved))))))
+  (org-mcp-test-with-clean-session
+    (org-mcp-test-with-temp-org "* Test\n"
+      (let ((org-mcp-allowed-directories nil))
+        (let ((resolved (org-mcp-access-resolve-directories)))
+          (should (member (file-name-directory (file-truename (car org-agenda-files)))
+                          resolved)))))))
 
 ;;; check-access uses resolved dirs
 
 (ert-deftest org-mcp-access-check-uses-resolved-dirs ()
   "org-mcp-check-access uses org-mcp--resolved-allowed-dirs when set."
-  (let* ((dir (make-temp-file "org-mcp-resolved-" t))
-         (file (expand-file-name "test.org" dir))
-         (org-mcp--resolved-allowed-dirs (list dir))
-         (org-mcp-allowed-directories nil))
-    (unwind-protect
-        (progn
-          (write-region "" nil file)
-          (should (org-mcp-check-access file)))
-      (delete-file file)
-      (delete-directory dir))))
+  (org-mcp-test-with-clean-session
+    (let* ((dir (make-temp-file "org-mcp-resolved-" t))
+           (file (expand-file-name "test.org" dir))
+           (org-mcp-allowed-directories nil))
+      (setq org-mcp--resolved-allowed-dirs (list dir))
+      (unwind-protect
+          (progn
+            (write-region "" nil file)
+            (should (org-mcp-check-access file)))
+        (delete-file file)
+        (delete-directory dir)))))
 
 (ert-deftest org-mcp-access-check-falls-back-without-resolved ()
   "org-mcp-check-access falls back to agenda dirs when resolved is nil."
-  (org-mcp-test-with-temp-org "* Test\n"
-    (let ((org-mcp--resolved-allowed-dirs nil)
-          (org-mcp-allowed-directories nil))
-      (should (org-mcp-check-access (car org-agenda-files))))))
+  (org-mcp-test-with-clean-session
+    (org-mcp-test-with-temp-org "* Test\n"
+      (let ((org-mcp-allowed-directories nil))
+        (should (org-mcp-check-access (car org-agenda-files)))))))
 
 ;;; Integration: roots-based access
 
 (ert-deftest org-mcp-access-roots-grants-project-access ()
   "Files under a client root are accessible after initialize."
-  (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
-         (org-file (expand-file-name "tasks.org" project-dir))
-         (org-mcp--initialized nil)
-         (org-mcp--client-roots nil)
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories nil))
-    (unwind-protect
-        (progn
-          (write-region "* TODO Task\n:PROPERTIES:\n:ID: roots-e2e-1\n:END:\n"
-                        nil org-file)
-          (find-file-noselect org-file)
-          (let ((org-agenda-files (list org-file)))
+  (org-mcp-test-with-clean-session
+    (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
+           (org-file (expand-file-name "tasks.org" project-dir))
+           (org-mcp-allowed-directories nil))
+      (unwind-protect
+          (progn
+            (write-region "* TODO Task\n:PROPERTIES:\n:ID: roots-e2e-1\n:END:\n"
+                          nil org-file)
+            (find-file-noselect org-file)
+            (let ((org-agenda-files (list org-file)))
+              (org-mcp--dispatch
+               `(:jsonrpc "2.0" :id 1 :method "initialize"
+                 :params (:protocolVersion "2025-03-26"
+                          :capabilities (:__placeholder t)
+                          :clientInfo (:name "test" :version "1.0")
+                          :roots [(:uri ,(concat "file://" project-dir))])))
+              (should (org-mcp-check-access org-file))
+              (let* ((response (org-mcp--dispatch
+                                '(:jsonrpc "2.0" :id 2 :method "tools/call"
+                                  :params (:name "org_get_entry"
+                                           :arguments (:id "roots-e2e-1")))))
+                     (result (plist-get response :result)))
+                (should result)
+                (should (equal (plist-get result :id) "roots-e2e-1")))))
+        (when (get-file-buffer org-file)
+          (kill-buffer (get-file-buffer org-file)))
+        (delete-directory project-dir t)))))
+
+(ert-deftest org-mcp-access-roots-denies-outside-project ()
+  "Files outside client roots are denied after initialize."
+  (org-mcp-test-with-clean-session
+    (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
+           (other-dir (file-truename (make-temp-file "org-mcp-other-" t)))
+           (other-file (expand-file-name "secret.org" other-dir))
+           (org-mcp-allowed-directories nil))
+      (unwind-protect
+          (progn
+            (write-region "" nil other-file)
             (org-mcp--dispatch
              `(:jsonrpc "2.0" :id 1 :method "initialize"
                :params (:protocolVersion "2025-03-26"
                         :capabilities (:__placeholder t)
                         :clientInfo (:name "test" :version "1.0")
                         :roots [(:uri ,(concat "file://" project-dir))])))
-            (should (org-mcp-check-access org-file))
-            (let* ((response (org-mcp--dispatch
-                              '(:jsonrpc "2.0" :id 2 :method "tools/call"
-                                :params (:name "org_get_entry"
-                                         :arguments (:id "roots-e2e-1")))))
-                   (result (plist-get response :result)))
-              (should result)
-              (should (equal (plist-get result :id) "roots-e2e-1")))))
-      (when (get-file-buffer org-file)
-        (kill-buffer (get-file-buffer org-file)))
-      (delete-directory project-dir t))))
-
-(ert-deftest org-mcp-access-roots-denies-outside-project ()
-  "Files outside client roots are denied after initialize."
-  (let* ((project-dir (file-truename (make-temp-file "org-mcp-project-" t)))
-         (other-dir (file-truename (make-temp-file "org-mcp-other-" t)))
-         (other-file (expand-file-name "secret.org" other-dir))
-         (org-mcp--initialized nil)
-         (org-mcp--client-roots nil)
-         (org-mcp--resolved-allowed-dirs nil)
-         (org-mcp-allowed-directories nil))
-    (unwind-protect
-        (progn
-          (write-region "" nil other-file)
-          (org-mcp--dispatch
-           `(:jsonrpc "2.0" :id 1 :method "initialize"
-             :params (:protocolVersion "2025-03-26"
-                      :capabilities (:__placeholder t)
-                      :clientInfo (:name "test" :version "1.0")
-                      :roots [(:uri ,(concat "file://" project-dir))])))
-          (should-error (org-mcp-check-access other-file)
-                        :type 'org-mcp-access-denied))
-      (delete-file other-file)
-      (delete-directory other-dir)
-      (delete-directory project-dir))))
+            (should-error (org-mcp-check-access other-file)
+                          :type 'org-mcp-access-denied))
+        (delete-file other-file)
+        (delete-directory other-dir)
+        (delete-directory project-dir)))))
 
 (provide 'org-mcp-access-test)
 ;;; org-mcp-access-test.el ends here

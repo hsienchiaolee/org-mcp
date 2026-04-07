@@ -39,5 +39,13 @@ The file is registered with `org-agenda-files' for the duration."
      :method ,method
      :params ,params)))
 
+(defmacro org-mcp-test-with-clean-session (&rest body)
+  "Run BODY with fresh bindings of org-mcp session state."
+  (declare (indent 0))
+  `(let ((org-mcp--initialized nil)
+         (org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil))
+     ,@body))
+
 (provide 'test-helper)
 ;;; test-helper.el ends here

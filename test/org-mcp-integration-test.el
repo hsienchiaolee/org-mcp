@@ -5,9 +5,8 @@
 
 (ert-deftest org-mcp-integration-full-workflow ()
   "Full workflow: init, query, mutate, verify."
-  (let ((org-mcp--initialized nil)
-        (org-mcp--resolved-allowed-dirs nil)
-        (sent-messages nil))
+  (org-mcp-test-with-clean-session
+  (let ((sent-messages nil))
     (cl-letf (((symbol-function 'org-mcp-rpc-send)
                (lambda (msg) (push msg sent-messages))))
       (org-mcp-test-with-temp-org
@@ -62,7 +61,7 @@
                       '(:jsonrpc "2.0" :id 5 :method "tools/call"
                         :params (:name "org_get_entry" :arguments (:id "integ-2")))))
                (result (plist-get resp :result)))
-          (should (equal (plist-get result :state) "DONE")))))))
+          (should (equal (plist-get result :state) "DONE"))))))))
 
 (ert-deftest org-mcp-integration-error-handling ()
   "Errors are properly formatted as JSON-RPC errors."
