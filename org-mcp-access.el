@@ -3,7 +3,9 @@
 ;;; Commentary:
 
 ;; Directory-scoped access control for org-mcp tools.
-;; All file paths are checked against `org-mcp-allowed-directories' before access.
+;; File paths are checked against the union of `org-mcp--client-roots' (from MCP
+;; initialize) and `org-mcp-allowed-directories', falling back to org-agenda-files
+;; directories when both are nil.
 
 ;;; Code:
 
@@ -47,9 +49,7 @@ Logs to stderr when falling back."
 Returns t if access is permitted."
   (let* ((real-path (file-truename file-path))
          (allowed (or org-mcp--resolved-allowed-dirs
-                      org-mcp-allowed-directories
-                      (mapcar (lambda (f) (file-name-directory (file-truename f)))
-                              (org-agenda-files)))))
+                      (org-mcp-access-resolve-directories))))
     (unless (seq-some (lambda (dir)
                         (string-prefix-p (file-truename (expand-file-name dir))
                                          real-path))

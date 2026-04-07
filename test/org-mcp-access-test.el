@@ -11,6 +11,7 @@
   "File under an allowed directory passes access check."
   (let* ((dir (make-temp-file "org-mcp-sec-allowed-" t))
          (file (expand-file-name "test.org" dir))
+         (org-mcp--resolved-allowed-dirs nil)
          (org-mcp-allowed-directories (list dir)))
     (unwind-protect
         (progn
@@ -24,6 +25,7 @@
   (let* ((allowed-dir (make-temp-file "org-mcp-sec-allowed-" t))
          (other-dir (make-temp-file "org-mcp-sec-other-" t))
          (file (expand-file-name "test.org" other-dir))
+         (org-mcp--resolved-allowed-dirs nil)
          (org-mcp-allowed-directories (list allowed-dir)))
     (unwind-protect
         (progn
