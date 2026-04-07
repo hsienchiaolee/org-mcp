@@ -96,9 +96,17 @@
      :inputSchema (:type "object")))
   "MCP tool definitions with JSON Schema input specs.")
 
-(defun org-mcp--handle-initialize (id _params)
+(defun org-mcp--handle-initialize (id params)
   "Handle the initialize handshake. Return response plist."
   (setq org-mcp--initialized t)
+  (let* ((roots-raw (plist-get params :roots))
+         (roots-list (and roots-raw (append roots-raw nil)))
+         (paths (delq nil (mapcar (lambda (r)
+                                    (org-mcp-access--parse-file-uri
+                                     (plist-get r :uri)))
+                                  roots-list))))
+    (setq org-mcp--client-roots paths)
+    (org-mcp-access-resolve-directories))
   (org-mcp-rpc-format-result
    id '(:protocolVersion "2025-03-26"
         :capabilities (:tools (:__placeholder t))

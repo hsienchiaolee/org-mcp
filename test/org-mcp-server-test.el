@@ -133,5 +133,56 @@
         (should (plist-get response :error))
         (should (= (plist-get (plist-get response :error) :code) -32602))))))
 
+(ert-deftest org-mcp-dispatch-initialize-with-roots ()
+  "Initialize extracts roots and resolves allowed directories."
+  (let* ((dir (make-temp-file "org-mcp-init-root-" t))
+         (uri (concat "file://" dir))
+         (org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (org-mcp-allowed-directories nil)
+         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                   :params (:protocolVersion "2025-03-26"
+                            :capabilities (:__placeholder t)
+                            :clientInfo (:name "test" :version "1.0")
+                            :roots [(:uri ,uri)]))))
+    (unwind-protect
+        (progn
+          (org-mcp--dispatch request)
+          (should (member dir org-mcp--client-roots))
+          (should (member dir org-mcp--resolved-allowed-dirs)))
+      (delete-directory dir))))
+
+(ert-deftest org-mcp-dispatch-initialize-without-roots ()
+  "Initialize without roots falls back to existing behavior."
+  (let* ((org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (request '(:jsonrpc "2.0" :id 1 :method "initialize"
+                   :params (:protocolVersion "2025-03-26"
+                            :capabilities (:__placeholder t)
+                            :clientInfo (:name "test" :version "1.0")))))
+    (org-mcp-test-with-temp-org "* Test\n"
+      (org-mcp--dispatch request)
+      (should (null org-mcp--client-roots))
+      (should org-mcp--resolved-allowed-dirs))))
+
+(ert-deftest org-mcp-dispatch-initialize-ignores-non-file-roots ()
+  "Initialize ignores non-file:// URIs in roots."
+  (let* ((dir (make-temp-file "org-mcp-init-root-" t))
+         (org-mcp--client-roots nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (org-mcp-allowed-directories nil)
+         (request `(:jsonrpc "2.0" :id 1 :method "initialize"
+                   :params (:protocolVersion "2025-03-26"
+                            :capabilities (:__placeholder t)
+                            :clientInfo (:name "test" :version "1.0")
+                            :roots [(:uri "https://example.com")
+                                    (:uri ,(concat "file://" dir))]))))
+    (unwind-protect
+        (progn
+          (org-mcp--dispatch request)
+          (should (= (length org-mcp--client-roots) 1))
+          (should (member dir org-mcp--client-roots)))
+      (delete-directory dir))))
+
 (provide 'org-mcp-server-test)
 ;;; org-mcp-server-test.el ends here

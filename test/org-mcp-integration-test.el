@@ -6,6 +6,7 @@
 (ert-deftest org-mcp-integration-full-workflow ()
   "Full workflow: init, query, mutate, verify."
   (let ((org-mcp--initialized nil)
+        (org-mcp--resolved-allowed-dirs nil)
         (sent-messages nil))
     (cl-letf (((symbol-function 'org-mcp-rpc-send)
                (lambda (msg) (push msg sent-messages))))
