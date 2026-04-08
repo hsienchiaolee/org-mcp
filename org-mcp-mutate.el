@@ -185,5 +185,31 @@ HEADLINE is always required."
     (save-buffer)
     (list :id new-id :file (buffer-file-name))))
 
+(defun org-mcp-mutate-assign-ids (file)
+  "Assign org-ids to every TODO-state heading in FILE that lacks one.
+A heading is considered task-like if `org-get-todo-state' returns
+non-nil — i.e. it carries any keyword from `org-todo-keywords'
+\(active or done, including custom keywords like NEXT, WAITING).
+Plain organizational headings without a state are skipped.
+
+Existing :ID: properties on task headings are preserved. Returns a
+plist \(:file FILE :entries ((:id ID :headline TEXT :level N) ...))
+in document order. Signals `org-mcp-access-denied' if FILE is not
+under an allowed directory."
+  (org-mcp-check-access file)
+  (with-current-buffer (find-file-noselect file)
+    (org-with-wide-buffer
+     (org-mode)
+     (let ((entries nil))
+       (goto-char (point-min))
+       (while (re-search-forward org-heading-regexp nil t)
+         (when (org-get-todo-state)
+           (let ((id (org-id-get-create))
+                 (headline (org-get-heading t t t t))
+                 (level (org-current-level)))
+             (push (list :id id :headline headline :level level) entries))))
+       (save-buffer)
+       (list :file file :entries (nreverse entries))))))
+
 (provide 'org-mcp-mutate)
 ;;; org-mcp-mutate.el ends here

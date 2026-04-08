@@ -302,5 +302,67 @@ Existing body.
                         :type 'org-mcp-invalid-input)
         (org-mcp-mutate-append-body "mut-val-body-ml" (nth 0 case))))))
 
+(ert-deftest org-mcp-mutate-assign-ids-assigns-and-preserves ()
+  "Assign ids to id-less headings, leave existing ids intact, return mapping."
+  (let* ((dir (file-truename (make-temp-file "org-mcp-assign-" t)))
+         (file (expand-file-name "plan.org" dir))
+         (org-mcp-allowed-directories (list dir))
+         (org-mcp--resolved-allowed-dirs nil))
+    (unwind-protect
+        (progn
+          (with-temp-file file
+            (insert "#+TODO: TODO NEXT WAITING | DONE CANCELLED\n"
+                    "* Plan\n"
+                    "** Component A\n"
+                    "*** TODO Task one\n"
+                    "*** NEXT Task two\n"
+                    ":PROPERTIES:\n:ID: preexisting-id\n:END:\n"
+                    "*** WAITING Task three\n"
+                    "*** DONE Task four\n"
+                    "** Notes (no state)\n"
+                    "*** Random non-task heading\n"))
+          (let* ((result (org-mcp-mutate-assign-ids file))
+                 (entries (plist-get result :entries)))
+            ;; Only headings with a TODO-state keyword get ids — including
+            ;; custom active states (NEXT, WAITING) and done states (DONE).
+            ;; Plain headings (Plan, Component A, Notes, Random...) are skipped.
+            (should (= (length entries) 4))
+            (let ((headlines (mapcar (lambda (e) (plist-get e :headline)) entries)))
+              (should (member "Task one" headlines))
+              (should (member "Task two" headlines))
+              (should (member "Task three" headlines))
+              (should (member "Task four" headlines))
+              (should-not (member "Plan" headlines))
+              (should-not (member "Component A" headlines))
+              (should-not (member "Notes (no state)" headlines))
+              (should-not (member "Random non-task heading" headlines)))
+            (dolist (e entries)
+              (should (stringp (plist-get e :id)))
+              (should (> (length (plist-get e :id)) 0)))
+            (should (seq-find (lambda (e) (equal (plist-get e :id) "preexisting-id"))
+                              entries))
+            ;; Idempotent: re-running assigns no new ids.
+            (let* ((ids1 (sort (mapcar (lambda (e) (plist-get e :id)) entries) #'string<))
+                   (entries2 (plist-get (org-mcp-mutate-assign-ids file) :entries))
+                   (ids2 (sort (mapcar (lambda (e) (plist-get e :id)) entries2) #'string<)))
+              (should (equal ids1 ids2)))))
+      (when (get-file-buffer file) (kill-buffer (get-file-buffer file)))
+      (delete-directory dir t))))
+
+(ert-deftest org-mcp-mutate-assign-ids-denies-outside-allowed ()
+  "Files outside allowed directories raise `org-mcp-access-denied'."
+  (let* ((dir (file-truename (make-temp-file "org-mcp-assign-denied-" t)))
+         (file (expand-file-name "plan.org" dir))
+         (org-mcp-allowed-directories nil)
+         (org-mcp--resolved-allowed-dirs nil)
+         (org-agenda-files nil))
+    (unwind-protect
+        (progn
+          (with-temp-file file (insert "* Plan\n"))
+          (should-error (org-mcp-mutate-assign-ids file)
+                        :type 'org-mcp-access-denied))
+      (when (get-file-buffer file) (kill-buffer (get-file-buffer file)))
+      (delete-directory dir t))))
+
 (provide 'org-mcp-mutate-test)
 ;;; org-mcp-mutate-test.el ends here

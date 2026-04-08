@@ -87,6 +87,11 @@
                                 :body (:type "string" :description "Body text")
                                 :template_key (:type "string" :description "Capture template key"))
                    :required ["headline"]))
+    (:name "org_assign_ids"
+     :description "Assign org-ids to all task headings (those carrying any TODO-state keyword, including custom states like NEXT or WAITING) in FILE that lack one. Existing :ID: properties are preserved. Returns the file path and an ordered list of task entries with their ids, headlines, and outline levels — use this to wire :DEPENDS: references after writing a plan file."
+     :inputSchema (:type "object"
+                   :properties (:file (:type "string" :description "Path to the .org file to process"))
+                   :required ["file"]))
     (:name "org_get_config"
      :description "Return TODO keyword sequences and tags for an agenda file."
      :inputSchema (:type "object"
@@ -108,9 +113,9 @@
     (setq org-mcp--client-roots paths)
     (org-mcp-access-resolve-directories))
   (org-mcp-rpc-format-result
-   id '(:protocolVersion "2025-03-26"
+   id `(:protocolVersion "2025-03-26"
         :capabilities (:tools (:__placeholder t))
-        :serverInfo (:name "org-mcp" :version "0.1.0"))))
+        :serverInfo (:name "org-mcp" :version ,org-mcp--version))))
 
 (defun org-mcp--handle-tools-list (id)
   "Handle tools/list. Return list of available tools."
@@ -209,6 +214,8 @@ Only allows lists, strings, numbers, and known query symbols."
         (plist-get result :id) (plist-get result :file)
         (plist-get args :headline) (plist-get args :state))
        result))
+    ("org_assign_ids"
+     (org-mcp-mutate-assign-ids (plist-get args :file)))
     ("org_get_config"
      (org-mcp-query-get-config (plist-get args :file)))
     ("org_list_files"
