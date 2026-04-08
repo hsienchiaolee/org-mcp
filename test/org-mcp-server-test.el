@@ -57,10 +57,25 @@
            (tools (plist-get (plist-get response :result) :tools)))
       (should (>= (length tools) 8))
       ;; Each tool should have name, description, inputSchema
-      (dolist (tool tools)
-        (should (plist-get tool :name))
-        (should (plist-get tool :description))
-        (should (plist-get tool :inputSchema))))))
+      (mapc (lambda (tool)
+              (should (plist-get tool :name))
+              (should (plist-get tool :description))
+              (should (plist-get tool :inputSchema)))
+            tools))))
+
+(ert-deftest org-mcp-dispatch-tools-list-serializes ()
+  "tools/list response must round-trip through json-serialize.
+Regression: returning a Lisp list (not a vector) for :tools caused
+json-serialize to misinterpret it as a plist and signal symbolp."
+  (let ((org-mcp--initialized t))
+    (let* ((response (org-mcp--dispatch
+                      '(:jsonrpc "2.0" :id 4 :method "tools/list")))
+           (json-str (json-serialize response))
+           (parsed (org-mcp-test-parse-json json-str))
+           (tools (plist-get (plist-get parsed :result) :tools)))
+      (should (vectorp tools))
+      (should (>= (length tools) 8))
+      (should (equal (plist-get (aref tools 0) :name) "org_get_entry")))))
 
 (ert-deftest org-mcp-dispatch-serializes-valid-jsonrpc ()
   "Dispatch returns plists that serialize to valid JSON-RPC 2.0."

@@ -119,7 +119,8 @@
 
 (defun org-mcp--handle-tools-list (id)
   "Handle tools/list. Return list of available tools."
-  (org-mcp-rpc-format-result id `(:tools ,org-mcp--tool-definitions)))
+  (org-mcp-rpc-format-result
+   id `(:tools ,(apply #'vector org-mcp--tool-definitions))))
 
 (defun org-mcp--handle-tools-call (id params)
   "Handle tools/call. Dispatch to the appropriate handler."
