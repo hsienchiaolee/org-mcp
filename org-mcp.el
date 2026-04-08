@@ -1,7 +1,7 @@
 ;;; org-mcp.el --- MCP server for Org-mode -*- lexical-binding: t; -*-
 
 ;; Author: Kai Lee
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "29.1") (org "9.6"))
 ;; Keywords: org, mcp
 ;; URL: https://github.com/hsienchiaolee/org-mcp
@@ -23,7 +23,7 @@
 (defvar org-mcp--initialized nil
   "Non-nil after successful initialize handshake.")
 
-(defconst org-mcp--version "0.1.0")
+(defconst org-mcp--version "0.1.1")
 
 (defconst org-mcp--tool-definitions
   `((:name "org_get_entry"
